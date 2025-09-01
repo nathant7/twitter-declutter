@@ -2,32 +2,32 @@
 
 ## ✨ Features
 
-### 🚫 **Remove Premium Ads**
+###  **Remove Premium Ads**
 - Removes "Subscribe to Premium" prompts from the sidebar
 - Hides the Premium tab
 - Eliminates profile Premium ads within profiles
 
-### 🤖 **Remove Grok**
+###  **Remove Grok**
 - Removes the Grok AI assistant from the sidebar
 - Hides Grok-related buttons and features on profiles and posts
 - Cleans up Grok action buttons
 
-### 🧹 **Remove Sidebar Clutter**
+###  **Remove Sidebar Clutter**
 - Removes Lists, Jobs, Communities, and Verified Orgs from the sidebar
 - Keeps your navigation clean and focused on essential features
 
-### 👥 **Remove Who to Follow**
+###  **Remove Who to Follow**
 - Eliminates follow suggestions from your feed
 - Removes "Who to follow" sections on profile pages
 
-### 📊 **Remove What's Happening**
+###  **Remove What's Happening**
 - Removes the "What's happening" sidebar content
 
-### 📱 **Remove Profile Features**
+###  **Remove Profile Features**
 - Removes the "Highlights" tab from profiles
 - Hides the "Articles" tab from profiles
 
-### 🐦 **Give 'em the bird!**
+###  **Give 'em the bird!**
 - Replaces X branding with the original Twitter bird logo
 - Changes "Post" buttons back to "Tweet"
 
@@ -37,7 +37,6 @@
 1. Clone this repository:
    ```bash
    git clone https://github.com/nathant7/twitter-declutter.git
-   cd twitter-declutter
    ```
 
 2. Open Chrome and navigate to `chrome://extensions/`
