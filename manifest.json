@@ -1,0 +1,23 @@
+{
+  "manifest_version": 3,
+  "name": "X 4 U",
+  "version": "2025.09.01",
+  "description": "Clean up your X/Twitter experience by removing ads, clutter, and unwanted sections",
+  "permissions": [
+    "storage",
+    "activeTab"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["*://*.twitter.com/*", "*://*.x.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_end"
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "icons": {
+
+  }
+}
