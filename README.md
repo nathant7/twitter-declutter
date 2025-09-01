@@ -95,7 +95,7 @@ If you find this extension helpful, consider:
 
 - ⭐ **Starring the repository**
 - 🐛 **Reporting bugs** or suggesting features
-- ☕ **Buying me a coffee** on [Ko-Fi](https://ko-fi.com/nathant7) (doesn't work yet!)
+- ☕ **Buying me a coffee** on [Ko-Fi](https://ko-fi.com/nathant7)
 - 🔗 **Sharing with friends** who might find it useful
 
 
