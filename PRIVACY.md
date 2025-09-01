@@ -1,6 +1,6 @@
 # Privacy Policy for X 4 U
 
-**Last updated:** [Today's date]
+**Last updated:** 1st September 2025
 
 ## Data Collection
 X 4 U does not collect, store, or transmit any personal information from users.
