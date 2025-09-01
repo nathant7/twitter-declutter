@@ -16,4 +16,4 @@ X 4 U does not collect, store, or transmit any personal information from users.
 - **Host permissions**: To access Twitter/X websites for UI modifications
 
 ## Contact
-For privacy concerns, please open an issue on our GitHub repository.
+For privacy concerns, please open an issue on the GitHub repository.
