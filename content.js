@@ -29,8 +29,8 @@ function cleanupEmptyContainers() {
 class SettingsManager {
   constructor() {
     this.settings = {
-      removePremiumAds: false,
-      removeSidebarClutter: false,
+  removePremiumAds: false,
+  removeSidebarClutter: false,
       removeWhoToFollow: false,
       removeProfileFeatures: false,
       removeGrok: false,
@@ -42,7 +42,7 @@ class SettingsManager {
   loadSettings() {
     return new Promise((resolve) => {
       chrome.storage.local.get(['settings'], (result) => {
-        if (result.settings) {
+    if (result.settings) {
           this.settings = { ...this.settings, ...result.settings };
         }
         console.log('Loaded settings:', this.settings);
@@ -75,9 +75,9 @@ class PremiumRemover {
   removePremiumAds() {
     if (this.isProcessing) return;
     this.isProcessing = true;
-
-    console.log('Attempting to remove premium ads...');
-
+  
+  console.log('Attempting to remove premium ads...');
+  
     let foundElements = 0;
 
     const premiumUpsellSelectors = [
@@ -138,12 +138,12 @@ class PremiumRemover {
     });
 
     const otherPremiumSelectors = [
-      '[data-testid="premium"]',
-      '[data-testid="premiumTweet"]',
-      '[data-testid="premium-content"]',
-      '[data-testid="premium-ad"]',
-      '[data-testid="premiumPromotion"]',
-      '[data-testid="promotedTweet"]',
+    '[data-testid="premium"]',
+    '[data-testid="premiumTweet"]',
+    '[data-testid="premium-content"]',
+    '[data-testid="premium-ad"]',
+    '[data-testid="premiumPromotion"]',
+    '[data-testid="promotedTweet"]',
       '[data-testid="ad"]'
     ];
 
@@ -174,12 +174,12 @@ class PremiumRemover {
     console.log('Restoring premium ads...');
 
     const premiumUpsellSelectors = [
-      '[data-testid="super-upsell-UpsellCardRenderProperties"]',
-      '[data-testid="super-upsell"]',
-      '[data-testid="upsell"]',
+    '[data-testid="super-upsell-UpsellCardRenderProperties"]',
+    '[data-testid="super-upsell"]',
+    '[data-testid="upsell"]',
       '[data-testid="verified_profile_visitor_upsell"]',
-      'div[aria-label*="Premium"]',
-      'span[aria-label*="Premium"]',
+    'div[aria-label*="Premium"]',
+    'span[aria-label*="Premium"]',
       'a[aria-label*="Premium"]',
       'a[href="/i/premium_sign_up"]',
       'div[data-testid="verified_profile_visitor_upsell"]',
@@ -250,28 +250,28 @@ class GrokRemover {
       '[data-testid="GrokDrawer"]',
       'button[aria-label="Enhance your post with Grok"]',
       '[data-testid="grokImgGen"]'
-    ];
+  ];
 
-    let foundElements = 0;
+  let foundElements = 0;
 
     grokSelectors.forEach(selector => {
-      try {
-        const elements = document.querySelectorAll(selector);
+    try {
+      const elements = document.querySelectorAll(selector);
         console.log(`Found ${elements.length} Grok elements for selector: ${selector}`);
-        elements.forEach(element => {
-          if (element && element.style && element.style.display !== 'none') {
-            element.style.display = 'none';
-            foundElements++;
+      elements.forEach(element => {
+        if (element && element.style && element.style.display !== 'none') {
+          element.style.display = 'none';
+          foundElements++;
             console.log('Hidden Grok element:', element);
-          }
-        });
-      } catch (e) {
-        console.log(`Error with selector ${selector}:`, e);
-      }
-    });
+        }
+      });
+    } catch (e) {
+      console.log(`Error with selector ${selector}:`, e);
+    }
+  });
 
-    const allElements = document.querySelectorAll('*');
-    allElements.forEach(element => {
+  const allElements = document.querySelectorAll('*');
+  allElements.forEach(element => {
       const text = element.textContent;
       if (text && text.includes('Grok')) {
         const navItem = element.closest('a[role="link"]') || element.closest('[data-testid]');
@@ -289,7 +289,7 @@ class GrokRemover {
 
           if (hasSidebarHref || hasSidebarTestId) {
             navItem.style.display = 'none';
-            foundElements++;
+        foundElements++;
             console.log('Hidden text-based Grok element:', navItem);
           }
         }
@@ -399,7 +399,7 @@ class TwitterBirdRestorer {
                 <path d="M23.643 4.937c-.835.37-1.732.62-2.675.733.962-.576 1.7-1.49 2.048-2.578-.9.534-1.897.922-2.958 1.13-.85-.904-2.06-1.47-3.4-1.47-2.572 0-4.658 2.086-4.658 4.66 0 .364.042.718.12 1.06-3.873-.195-7.304-2.05-9.602-4.868-.4.69-.63 1.49-.63 2.342 0 1.616.823 3.043 2.072 3.878-.764-.025-1.482-.234-2.11-.583v.06c0 2.257 1.605 4.14 3.737 4.568-.392.106-.803.162-1.227.162-.3 0-.593-.028-.877-.082.593 1.85 2.313 3.198 4.352 3.234-1.595 1.25-3.604 1.995-5.786 1.995-.376 0-.747-.022-1.112-.065 2.062 1.323 4.51 2.093 7.14 2.093 8.57 0 13.255-7.098 13.255-13.254 0-.2-.005-.402-.014-.602.91-.658 1.7-1.477 2.323-2.41z"/>
               </g>
             `;
-            foundElements++;
+        foundElements++;
             console.log('Restored Twitter bird:', element);
           }
         });
@@ -608,56 +608,56 @@ class SidebarClutterRemover {
   removeSidebarClutter() {
     if (this.isProcessing) return;
     this.isProcessing = true;
-
-    console.log('Attempting to remove sidebar clutter...');
-
-    const sidebarClutterSelectors = [
-      // Lists
-      'a[href="/i/lists"]',
+  
+  console.log('Attempting to remove sidebar clutter...');
+  
+  const sidebarClutterSelectors = [
+    // Lists
+    'a[href="/i/lists"]',
       'a[href*="/lists"]',
-      '[data-testid="lists"]',
-      // Jobs
-      'a[href="/i/jobs"]',
+    '[data-testid="lists"]',
+    // Jobs
+    'a[href="/i/jobs"]',
       'a[href*="/jobs"]',
-      '[data-testid="jobs"]',
-      // Communities
-      'a[href="/i/communities"]',
+    '[data-testid="jobs"]',
+    // Communities
+    'a[href="/i/communities"]',
       'a[href*="/communities"]',
-      '[data-testid="communities"]',
-      // Verified Orgs
-      'a[href="/i/verified_orgs"]',
+    '[data-testid="communities"]',
+    // Verified Orgs
+    'a[href="/i/verified_orgs"]',
       'a[href="/i/verified-orgs-signup"]',
       'a[href*="/verified-orgs"]',
-      '[data-testid="verified_orgs"]',
+    '[data-testid="verified_orgs"]',
       '[data-testid="vo-signup-tab"]'
-    ];
+  ];
 
-    let foundElements = 0;
+  let foundElements = 0;
 
-    sidebarClutterSelectors.forEach(selector => {
-      try {
-        const elements = document.querySelectorAll(selector);
-        console.log(`Found ${elements.length} elements for selector: ${selector}`);
-        elements.forEach(element => {
-          if (element && element.style && element.style.display !== 'none') {
-            element.style.display = 'none';
-            foundElements++;
-            console.log('Hidden sidebar element:', element);
-          }
-        });
-      } catch (e) {
-        console.log(`Error with selector ${selector}:`, e);
-      }
-    });
+  sidebarClutterSelectors.forEach(selector => {
+    try {
+      const elements = document.querySelectorAll(selector);
+      console.log(`Found ${elements.length} elements for selector: ${selector}`);
+      elements.forEach(element => {
+        if (element && element.style && element.style.display !== 'none') {
+          element.style.display = 'none';
+          foundElements++;
+          console.log('Hidden sidebar element:', element);
+        }
+      });
+    } catch (e) {
+      console.log(`Error with selector ${selector}:`, e);
+    }
+  });
 
-    const allElements = document.querySelectorAll('*');
-    allElements.forEach(element => {
-      const text = element.textContent;
-      if (text) {
+  const allElements = document.querySelectorAll('*');
+  allElements.forEach(element => {
+    const text = element.textContent;
+    if (text) {
         if (text.includes('Lists') || text.includes('Jobs') ||
           text.includes('Communities') || text.includes('Verified Orgs')) {
-          const navItem = element.closest('a[role="link"]') || element.closest('[data-testid]');
-          if (navItem && navItem.style.display !== 'none') {
+        const navItem = element.closest('a[role="link"]') || element.closest('[data-testid]');
+        if (navItem && navItem.style.display !== 'none') {
             const href = navItem.getAttribute('href');
             const role = navItem.getAttribute('role');
             const dataTestId = navItem.getAttribute('data-testid');
@@ -683,58 +683,58 @@ class SidebarClutterRemover {
               return;
             }
 
-            navItem.style.display = 'none';
-            foundElements++;
-            console.log('Hidden text-based sidebar element:', navItem);
-          }
+          navItem.style.display = 'none';
+          foundElements++;
+          console.log('Hidden text-based sidebar element:', navItem);
         }
       }
-    });
+    }
+  });
 
-    console.log(`Total sidebar elements hidden: ${foundElements}`);
+  console.log(`Total sidebar elements hidden: ${foundElements}`);
     this.isProcessing = false;
   }
 
   restoreSidebarClutter() {
     if (this.isProcessing) return;
     this.isProcessing = true;
-
-    console.log('Restoring sidebar clutter...');
-
-    const sidebarClutterSelectors = [
-      'a[href="/i/lists"]',
+  
+  console.log('Restoring sidebar clutter...');
+  
+  const sidebarClutterSelectors = [
+    'a[href="/i/lists"]',
       'a[href*="/lists"]',
-      'a[href="/i/jobs"]',
+    'a[href="/i/jobs"]',
       'a[href*="/jobs"]',
-      'a[href="/i/communities"]',
+    'a[href="/i/communities"]',
       'a[href*="/communities"]',
-      'a[href="/i/verified_orgs"]',
+    'a[href="/i/verified_orgs"]',
       'a[href="/i/verified-orgs-signup"]',
       'a[href*="/verified-orgs"]',
-      '[data-testid="lists"]',
-      '[data-testid="jobs"]',
-      '[data-testid="communities"]',
+    '[data-testid="lists"]',
+    '[data-testid="jobs"]',
+    '[data-testid="communities"]',
       '[data-testid="verified_orgs"]',
       '[data-testid="vo-signup-tab"]'
-    ];
+  ];
 
-    sidebarClutterSelectors.forEach(selector => {
-      const elements = document.querySelectorAll(selector);
-      elements.forEach(element => {
-        if (element && element.style) {
-          element.style.display = '';
-        }
-      });
+  sidebarClutterSelectors.forEach(selector => {
+    const elements = document.querySelectorAll(selector);
+    elements.forEach(element => {
+      if (element && element.style) {
+        element.style.display = '';
+      }
     });
+  });
 
-    const allElements = document.querySelectorAll('*');
-    allElements.forEach(element => {
-      const text = element.textContent;
-      if (text) {
+  const allElements = document.querySelectorAll('*');
+  allElements.forEach(element => {
+    const text = element.textContent;
+    if (text) {
         if (text.includes('Lists') || text.includes('Jobs') ||
           text.includes('Communities') || text.includes('Verified Orgs')) {
-          const navItem = element.closest('a[role="link"]') || element.closest('[data-testid]');
-          if (navItem && navItem.style && navItem.style.display === 'none') {
+        const navItem = element.closest('a[role="link"]') || element.closest('[data-testid]');
+        if (navItem && navItem.style && navItem.style.display === 'none') {
             const href = navItem.getAttribute('href');
             const role = navItem.getAttribute('role');
             const dataTestId = navItem.getAttribute('data-testid');
@@ -750,13 +750,13 @@ class SidebarClutterRemover {
               return;
             }
 
-            navItem.style.display = '';
-            console.log('Restored text-based sidebar element:', navItem);
-          }
+          navItem.style.display = '';
+          console.log('Restored text-based sidebar element:', navItem);
         }
       }
-    });
-
+    }
+  });
+  
     this.isProcessing = false;
   }
 }
@@ -770,9 +770,9 @@ class WhoToFollowRemover {
   removeWhoToFollow() {
     if (this.isProcessing) return;
     this.isProcessing = true;
-
-    console.log('Attempting to remove "Who to follow" section...');
-
+  
+  console.log('Attempting to remove "Who to follow" section...');
+  
     let foundElements = 0;
 
     const whoToFollowAside = document.querySelector('aside[aria-label="Who to follow"]');
@@ -804,29 +804,29 @@ class WhoToFollowRemover {
       }
     }
 
-    const whoToFollowSelectors = [
-      '[data-testid="whoToFollow"]',
-      '[data-testid="who-to-follow"]',
-      '[data-testid="whoToFollowSection"]',
-      '[data-testid="whoToFollowModule"]',
+  const whoToFollowSelectors = [
+    '[data-testid="whoToFollow"]',
+    '[data-testid="who-to-follow"]',
+    '[data-testid="whoToFollowSection"]',
+    '[data-testid="whoToFollowModule"]',
       '[data-testid="whoToFollowList"]'
-    ];
+  ];
 
-    whoToFollowSelectors.forEach(selector => {
-      try {
-        const elements = document.querySelectorAll(selector);
-        console.log(`Found ${elements.length} elements for selector: ${selector}`);
-        elements.forEach(element => {
-          if (element && element.style && element.style.display !== 'none') {
-            element.style.display = 'none';
-            foundElements++;
-            console.log('Hidden "Who to follow" element:', element);
-          }
-        });
-      } catch (e) {
-        console.log(`Error with selector ${selector}:`, e);
-      }
-    });
+  whoToFollowSelectors.forEach(selector => {
+    try {
+      const elements = document.querySelectorAll(selector);
+      console.log(`Found ${elements.length} elements for selector: ${selector}`);
+      elements.forEach(element => {
+        if (element && element.style && element.style.display !== 'none') {
+          element.style.display = 'none';
+          foundElements++;
+          console.log('Hidden "Who to follow" element:', element);
+        }
+      });
+    } catch (e) {
+      console.log(`Error with selector ${selector}:`, e);
+    }
+  });
 
     console.log(`Total "Who to follow" elements hidden: ${foundElements}`);
     this.isProcessing = false;
@@ -948,7 +948,7 @@ class WhoToFollowRemover {
     elementsToHide.forEach(element => {
       if (element && element.style && element.style.display !== 'none') {
         element.style.display = 'none';
-        foundElements++;
+          foundElements++;
         console.log('Hidden profile "Who to follow" element:', element);
       }
     });
@@ -961,9 +961,9 @@ class WhoToFollowRemover {
             child.style.display !== 'none' && !elementsToHide.includes(child)
           );
 
-          if (visibleChildren.length === 0) {
+              if (visibleChildren.length === 0) {
             currentParent.style.display = 'none';
-            foundElements++;
+                foundElements++;
             console.log(`Hidden empty parent container:`, currentParent);
           } else {
             break;
@@ -1010,9 +1010,9 @@ class WhoToFollowRemover {
                   currentParent.style.display = 'none';
                   foundElements++;
                   console.log(`Hidden empty profile parent container:`, currentParent);
-                } else {
-                  break;
-                }
+          } else {
+            break;
+          }
 
                 currentParent = currentParent.parentElement;
               } else {
@@ -1112,11 +1112,11 @@ class WhoToFollowRemover {
     });
 
     const profileWhoToFollowSelectors = [
-      '[data-testid="whoToFollow"]',
-      '[data-testid="who-to-follow"]',
-      '[data-testid="whoToFollowSection"]',
-      '[data-testid="whoToFollowModule"]',
-      '[data-testid="whoToFollowList"]',
+    '[data-testid="whoToFollow"]',
+    '[data-testid="who-to-follow"]',
+    '[data-testid="whoToFollowSection"]',
+    '[data-testid="whoToFollowModule"]',
+    '[data-testid="whoToFollowList"]',
       '[data-testid="profileWhoToFollow"]',
       '[data-testid="profile-who-to-follow"]',
       'div[aria-label*="Who to follow"]',
@@ -1125,10 +1125,10 @@ class WhoToFollowRemover {
     ];
 
     profileWhoToFollowSelectors.forEach(selector => {
-      const elements = document.querySelectorAll(selector);
-      elements.forEach(element => {
+    const elements = document.querySelectorAll(selector);
+    elements.forEach(element => {
         if (element && element.style && element.style.display === 'none') {
-          element.style.display = '';
+        element.style.display = '';
           console.log('Restored profile "Who to follow" element:', element);
 
           // Also restore parent containers that might have been hidden
@@ -1142,9 +1142,9 @@ class WhoToFollowRemover {
               break;
             }
           }
-        }
-      });
+      }
     });
+  });
 
     this.isProcessing = false;
   }
@@ -1197,9 +1197,9 @@ class ProfileFeaturesRemover {
     });
 
 
-    const allElements = document.querySelectorAll('*');
-    allElements.forEach(element => {
-      const text = element.textContent;
+  const allElements = document.querySelectorAll('*');
+  allElements.forEach(element => {
+    const text = element.textContent;
       if (text && (text.trim() === 'Articles' || text.trim() === 'Highlights')) {
         if (element.tagName === 'SPAN' && element.classList.contains('css-1jxf684')) {
 
@@ -1257,11 +1257,11 @@ class ProfileFeaturesRemover {
           if (!hasHiddenTab) {
             element.style.display = '';
             console.log('Restored profile feature parent container:', element);
-          }
         }
       }
-    });
-
+    }
+  });
+  
     this.isProcessing = false;
   }
 }
@@ -1282,10 +1282,10 @@ let isProcessing = false;
 // Apply all active features
 function applyFeatures() {
   if (isProcessing) return;
-
+  
   const settings = settingsManager.getSettings();
   console.log('Applying features, removePremiumAds:', settings.removePremiumAds, 'removeSidebarClutter:', settings.removeSidebarClutter, 'removeWhoToFollow:', settings.removeWhoToFollow, 'removeProfileFeatures:', settings.removeProfileFeatures, 'removeGrok:', settings.removeGrok, 'restoreTwitterBird:', settings.restoreTwitterBird, 'removeWhatsHappening:', settings.removeWhatsHappening);
-
+  
   if (settings.removePremiumAds) {
     premiumRemover.removePremiumAds();
   } else {
@@ -1297,13 +1297,13 @@ function applyFeatures() {
   } else {
     grokRemover.restoreGrok();
   }
-
+  
   if (settings.removeSidebarClutter) {
     sidebarClutterRemover.removeSidebarClutter();
   } else {
     sidebarClutterRemover.restoreSidebarClutter();
   }
-
+  
   if (settings.removeWhoToFollow) {
     whoToFollowRemover.removeWhoToFollow();
 
@@ -1344,7 +1344,7 @@ function setupObserver() {
     if (observerTimeout) {
       clearTimeout(observerTimeout);
     }
-
+    
     // Debounce the observer to prevent spam
     observerTimeout = setTimeout(() => {
       if (!isProcessing) {
