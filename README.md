@@ -1,5 +1,7 @@
 # 🐦 X 4 U - A Twitter Declutter Extension
 
+Now available on the [Chrome Web Store!](https://chromewebstore.google.com/detail/x-4-u/mhacmebldfeefobhodmfmdmhmgidpegc)
+
 ## ✨ Features
 
 ###  **Remove Premium Ads**
@@ -48,7 +50,7 @@
 5. The extension will now be installed and ready to use!
 
 ### From Chrome Web Store
-*Coming soon!*
+[Click me](https://chromewebstore.google.com/detail/x-4-u/mhacmebldfeefobhodmfmdmhmgidpegc) and please consider leaving a nice review I would very much appreciate it! :)
 
 ## 🎯 Usage
 
@@ -93,7 +95,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 If you find this extension helpful, consider:
 
-- ⭐ **Starring the repository**
+- ⭐ **Starring the repository & leaving a positive review on the Chrome Web Store page**
 - 🐛 **Reporting bugs** or suggesting features
 - ☕ **Buying me a coffee** on [Ko-Fi](https://ko-fi.com/nathant7)
 - 🔗 **Sharing with friends** who might find it useful
