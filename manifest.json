@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
-  "name": "X 4 U",
-  "version": "2025.09.01",
+  "name": "X+ // A Twitter Declutter Extension",
+  "version": "2025.09.13",
   "description": "Clean up your X/Twitter experience by removing ads, clutter, and unwanted sections",
   "permissions": [
     "storage",

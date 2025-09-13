@@ -1,9 +1,9 @@
-# Privacy Policy for X 4 U
+# Privacy Policy for X+ (Twitter+)
 
-**Last updated:** [Today's date]
+**Last updated:** 13/09/25
 
 ## Data Collection
-X 4 U does not collect, store, or transmit any personal information from users.
+X+ (Twitter+) does not collect, store, or transmit any personal information from users.
 
 ## What We Do
 - The extension only modifies the Twitter/X interface locally in your browser

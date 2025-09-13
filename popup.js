@@ -1,4 +1,4 @@
-// Popup script for Twitter Declutter
+// Popup script for X+ (Twitter+)
 document.addEventListener('DOMContentLoaded', function() {
   const premiumAdsToggle = document.getElementById('premiumAdsToggle');
   const grokToggle = document.getElementById('grokToggle');
@@ -32,10 +32,10 @@ document.addEventListener('DOMContentLoaded', function() {
          // Set the title based on the saved state
          const titleElement = document.getElementById('extensionTitle');
          if (result.settings.restoreTwitterBird) {
-           titleElement.textContent = 'Twitter 4 U';
+           titleElement.textContent = 'Twitter+';
            titleElement.classList.add('twitter-mode');
          } else {
-           titleElement.textContent = 'X 4 U';
+           titleElement.textContent = 'X+';
            titleElement.classList.remove('twitter-mode');
          }
        }
@@ -211,11 +211,11 @@ document.addEventListener('DOMContentLoaded', function() {
     const titleElement = document.getElementById('extensionTitle');
     if (newState) {
       // Change to Twitter mode
-      titleElement.textContent = 'Twitter 4 U';
+      titleElement.textContent = 'Twitter+';
       titleElement.classList.add('twitter-mode');
     } else {
       // Change back to X mode
-      titleElement.textContent = 'X 4 U';
+      titleElement.textContent = 'X+';
       titleElement.classList.remove('twitter-mode');
     }
     
@@ -287,11 +287,11 @@ document.addEventListener('DOMContentLoaded', function() {
     // Animate the title change
     if (newState) {
       // Change to Twitter mode
-      titleElement.textContent = 'Twitter 4 U';
+      titleElement.textContent = 'Twitter+';
       titleElement.classList.add('twitter-mode');
     } else {
       // Change back to X mode
-      titleElement.textContent = 'X 4 U';
+      titleElement.textContent = 'X+';
       titleElement.classList.remove('twitter-mode');
     }
     

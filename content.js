@@ -1,5 +1,5 @@
-// Twitter Declutter App !
-console.log('X 4 U extension loaded');
+// X+ (Twitter+) App !
+console.log('X+ (Twitter+) extension loaded');
 
 // General cleanup function to hide empty containers
 function cleanupEmptyContainers() {
@@ -90,7 +90,9 @@ class PremiumRemover {
       'a[aria-label*="Premium"]',
       'a[href="/i/premium_sign_up"]',
       'div[data-testid="verified_profile_visitor_upsell"]',
-      'div.css-175oi2r.r-yfoy6g.r-18bvks7.r-1867qdf.r-1phboty.r-rs99b7.r-1ifxtd0.r-1udh08x'
+      'div.css-175oi2r.r-yfoy6g.r-18bvks7.r-1867qdf.r-1phboty.r-rs99b7.r-1ifxtd0.r-1udh08x',
+      'div[style*="background-color: rgb(0, 67, 41)"]',
+      'a[href="/i/premium_sign_up"][role="link"]'
     ];
 
     premiumUpsellSelectors.forEach(selector => {
@@ -163,6 +165,54 @@ class PremiumRemover {
       }
     });
 
+    // Additional text-based detection for verification banners
+    const allElements = document.querySelectorAll('*');
+    allElements.forEach(element => {
+      const text = element.textContent;
+      if (text && (text.includes("You aren't verified yet") || text.includes("Get verified for boosted replies"))) {
+        // Look for the specific green background container first
+        let verificationBanner = element.closest('div[style*="background-color: rgb(0, 67, 41)"]');
+        
+        // If not found, look for the parent container that contains both text elements
+        if (!verificationBanner) {
+          verificationBanner = element.closest('div.css-175oi2r.r-1q9bdsx.r-1udh08x.r-18u37iz.r-1h0z5md');
+        }
+        
+        // If still not found, look for the outermost container
+        if (!verificationBanner) {
+          verificationBanner = element.closest('div.css-175oi2r.r-1xpp3t0');
+        }
+        
+        if (verificationBanner && verificationBanner.style && verificationBanner.style.display !== 'none') {
+          verificationBanner.style.display = 'none';
+          foundElements++;
+          console.log('Hidden verification banner by text detection:', verificationBanner);
+          
+          // Also hide parent containers if they become empty
+          let currentParent = verificationBanner.parentElement;
+          for (let i = 0; i < 3; i++) {
+            if (currentParent && currentParent !== document.body) {
+              const visibleChildren = Array.from(currentParent.children).filter(child =>
+                child.style.display !== 'none' && child !== verificationBanner
+              );
+
+              if (visibleChildren.length === 0) {
+                currentParent.style.display = 'none';
+                foundElements++;
+                console.log(`Hidden empty verification banner parent container:`, currentParent);
+              } else {
+                break;
+              }
+
+              currentParent = currentParent.parentElement;
+            } else {
+              break;
+            }
+          }
+        }
+      }
+    });
+
     console.log(`Total premium elements hidden: ${foundElements}`);
     this.isProcessing = false;
   }
@@ -183,7 +233,9 @@ class PremiumRemover {
       'a[aria-label*="Premium"]',
       'a[href="/i/premium_sign_up"]',
       'div[data-testid="verified_profile_visitor_upsell"]',
-      'div.css-175oi2r.r-yfoy6g.r-18bvks7.r-1867qdf.r-1phboty.r-rs99b7.r-1ifxtd0.r-1udh08x'
+      'div.css-175oi2r.r-yfoy6g.r-18bvks7.r-1867qdf.r-1phboty.r-rs99b7.r-1ifxtd0.r-1udh08x',
+      'div[style*="background-color: rgb(0, 67, 41)"]',
+      'a[href="/i/premium_sign_up"][role="link"]'
     ];
 
     premiumUpsellSelectors.forEach(selector => {
@@ -224,6 +276,30 @@ class PremiumRemover {
           element.style.display = '';
         }
       });
+    });
+
+    // Restore verification banners by text detection
+    const allElements = document.querySelectorAll('*');
+    allElements.forEach(element => {
+      if (element && element.style && element.style.display === 'none') {
+        const text = element.textContent;
+        if (text && (text.includes("You aren't verified yet") || text.includes("Get verified for boosted replies"))) {
+          element.style.display = '';
+          console.log('Restored verification banner by text detection:', element);
+          
+          // Also restore parent containers
+          let currentParent = element.parentElement;
+          for (let i = 0; i < 3; i++) {
+            if (currentParent && currentParent !== document.body && currentParent.style && currentParent.style.display === 'none') {
+              currentParent.style.display = '';
+              console.log(`Restored verification banner parent container:`, currentParent);
+              currentParent = currentParent.parentElement;
+            } else {
+              break;
+            }
+          }
+        }
+      }
     });
 
     this.isProcessing = false;
@@ -1374,7 +1450,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
 // Initialize the extension
 async function init() {
-  console.log('X 4 U initialized');
+  console.log('X+ (Twitter+) initialized');
   await settingsManager.loadSettings();
   setupObserver();
   applyFeatures();

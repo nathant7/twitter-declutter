@@ -1,10 +1,31 @@
-Logo.psd
+# Chrome Extension Build Files
+*.crx
+*.pem
+*.zip
+
+# Source Design Files
+*.psd
 Logo.jpg
-twitter-declutter.crx
-twitter-declutter.pem
-twitter-declutter.zip
-WebStore/Screenshots.psd
-.gitignore
-WebStore/Before.jpg
-WebStore/After.jpg
-WebStore/Logo128.jpg
+Logo.psd
+
+# Web Store Assets
+WebStore/
+
+# Development Files
+.DS_Store
+Thumbs.db
+*.log
+
+# IDE Files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Node modules
+node_modules/
+package-lock.json
+
+# Temporary files
+*.tmp
+*.temp
