@@ -2,8 +2,6 @@
 
 Now available on the [Chrome Web Store!](https://chromewebstore.google.com/detail/x-4-u/mhacmebldfeefobhodmfmdmhmgidpegc)
 
-Now available on the [Chrome Web Store!](https://chromewebstore.google.com/detail/x-4-u/mhacmebldfeefobhodmfmdmhmgidpegc)
-
 ## ✨ Features
 
 ###  **Remove Premium Ads**
