@@ -956,7 +956,7 @@ class WhoToFollowRemover {
     if (this.isProcessing) return;
     this.isProcessing = true;
 
-    console.log('Attempting to remove ALL UserCells on the page...');
+    console.log('Attempting to remove "Who to follow" UserCells...');
 
     // Need to preserve users on this page, as it is a valid user search 
     const isSearchPage = window.location.pathname.includes('/search');
@@ -966,10 +966,18 @@ class WhoToFollowRemover {
       return;
     }
 
+    // Check if we're on a profile page with followers/following list
+    const pathname = window.location.pathname;
+    const isFollowersPage = /\/[^\/]+\/(followers|following|verified_followers)$/.test(pathname);
+    
+    if (isFollowersPage) {
+      console.log('On followers/following page - only removing sidebar "Who to follow" sections');
+    }
+
     let foundElements = 0;
 
     const allUserCells = document.querySelectorAll('button[data-testid="UserCell"]');
-    console.log(`Found ${allUserCells.length} total user cells - removing ALL of them!`);
+    console.log(`Found ${allUserCells.length} total user cells`);
 
     // Find and remove "Who to follow" headings
     const whoToFollowHeadings = document.querySelectorAll('h2[aria-level="2"][role="heading"]');
@@ -985,9 +993,38 @@ class WhoToFollowRemover {
 
     const elementsToHide = [];
 
+    // Find the followers/following list section to exclude from removal
+    let followersFollowingSection = null;
+    if (isFollowersPage) {
+      // Look for the section containing the followers/following list
+      const listSection = document.querySelector('section[aria-labelledby^="accessible-list-"]');
+      if (listSection) {
+        const h1 = listSection.querySelector('h1');
+        if (h1 && (h1.textContent.includes('Followers') || h1.textContent.includes('Following') || h1.textContent.includes('Verified Followers'))) {
+          followersFollowingSection = listSection;
+          console.log('Found followers/following list section to preserve:', followersFollowingSection);
+        }
+      }
+    }
+
     allUserCells.forEach(cell => {
+      // Skip UserCells that are in the followers/following list section
+      if (isFollowersPage && followersFollowingSection) {
+        if (followersFollowingSection.contains(cell)) {
+          console.log('Skipping UserCell in followers/following list:', cell);
+          return;
+        }
+      }
+
       const cellContainer = cell.closest('div[data-testid="cellInnerDiv"]');
       if (cellContainer) {
+        // Double-check: if on followers/following page, make sure it's not in the main list
+        if (isFollowersPage && followersFollowingSection) {
+          if (followersFollowingSection.contains(cellContainer)) {
+            console.log('Skipping UserCell container in followers/following list:', cellContainer);
+            return;
+          }
+        }
         elementsToHide.push(cellContainer);
         console.log('Added UserCell to hide:', cellContainer);
       }
@@ -995,8 +1032,18 @@ class WhoToFollowRemover {
 
     whoToFollowHeadings.forEach(heading => {
       if (heading.textContent.includes('Who to follow')) {
+        // Skip if this heading is in the followers/following list section
+        if (isFollowersPage && followersFollowingSection && followersFollowingSection.contains(heading)) {
+          console.log('Skipping "Who to follow" heading in followers/following list:', heading);
+          return;
+        }
         const headingContainer = heading.closest('div[data-testid="cellInnerDiv"]');
         if (headingContainer) {
+          // Double-check: if on followers/following page, make sure it's not in the main list
+          if (isFollowersPage && followersFollowingSection && followersFollowingSection.contains(headingContainer)) {
+            console.log('Skipping "Who to follow" heading container in followers/following list:', headingContainer);
+            return;
+          }
           elementsToHide.push(headingContainer);
           console.log('Added "Who to follow" heading to hide:', headingContainer);
         }
@@ -1004,16 +1051,36 @@ class WhoToFollowRemover {
     });
 
     showMoreLinks.forEach(link => {
+      // Skip if this link is in the followers/following list section
+      if (isFollowersPage && followersFollowingSection && followersFollowingSection.contains(link)) {
+        console.log('Skipping "Show more" link in followers/following list:', link);
+        return;
+      }
       const linkContainer = link.closest('div[data-testid="cellInnerDiv"]');
       if (linkContainer) {
+        // Double-check: if on followers/following page, make sure it's not in the main list
+        if (isFollowersPage && followersFollowingSection && followersFollowingSection.contains(linkContainer)) {
+          console.log('Skipping "Show more" link container in followers/following list:', linkContainer);
+          return;
+        }
         elementsToHide.push(linkContainer);
         console.log('Added "Show more" link to hide:', linkContainer);
       }
     });
 
     spacers.forEach(spacer => {
+      // Skip if this spacer is in the followers/following list section
+      if (isFollowersPage && followersFollowingSection && followersFollowingSection.contains(spacer)) {
+        console.log('Skipping spacer in followers/following list:', spacer);
+        return;
+      }
       const spacerContainer = spacer.closest('div[data-testid="cellInnerDiv"]');
       if (spacerContainer) {
+        // Double-check: if on followers/following page, make sure it's not in the main list
+        if (isFollowersPage && followersFollowingSection && followersFollowingSection.contains(spacerContainer)) {
+          console.log('Skipping spacer container in followers/following list:', spacerContainer);
+          return;
+        }
         elementsToHide.push(spacerContainer);
         console.log('Added spacer to hide:', spacerContainer);
       }
@@ -1102,7 +1169,7 @@ class WhoToFollowRemover {
       }
     });
 
-    console.log(`Total UserCell elements hidden: ${foundElements}`);
+    console.log(`Total "Who to follow" UserCell elements hidden: ${foundElements}`);
     this.isProcessing = false;
   }
 
