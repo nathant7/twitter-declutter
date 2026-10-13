@@ -611,24 +611,22 @@ class WhatsHappeningRemover {
     console.log('Attempting to remove "What\'s happening" section...');
 
     let foundElements = 0;
+    const elements = document.querySelectorAll('div[aria-label="Timeline: Trending now"]');
+    console.log(`Found ${elements.length} "What's happening" elements`);
 
-    const whatsHappeningSelectors = [
-      'div[aria-label="Timeline: Trending now"]'
-    ];
+    elements.forEach(element => {
+      const section = element.closest('section[aria-labelledby]');
+      const sectionWrapper = section?.parentElement;
+      const wrapperOnlyContainsSection = sectionWrapper?.tagName === 'DIV' &&
+        sectionWrapper.children.length === 1 &&
+        sectionWrapper.firstElementChild === section;
+      const target = wrapperOnlyContainsSection ? sectionWrapper : section || element;
 
-    whatsHappeningSelectors.forEach(selector => {
-      try {
-        const elements = document.querySelectorAll(selector);
-        console.log(`Found ${elements.length} "What's happening" elements for selector: ${selector}`);
-        elements.forEach(element => {
-          if (element && element.style && element.style.display !== 'none') {
-            element.style.display = 'none';
-            foundElements++;
-            console.log('Hidden "What\'s happening" element:', element);
-          }
-        });
-      } catch (e) {
-        console.log(`Error with selector ${selector}:`, e);
+      if (target.style.display !== 'none') {
+        target.setAttribute('data-xplus-whats-happening-display', target.style.display);
+        target.style.display = 'none';
+        foundElements++;
+        console.log('Hidden "What\'s happening" section:', target);
       }
     });
 
@@ -642,34 +640,10 @@ class WhatsHappeningRemover {
 
     console.log('Restoring "What\'s happening" section...');
 
-    const whatsHappeningSelectors = [
-      'div[aria-label="Timeline: Trending now"]'
-    ];
-
-    whatsHappeningSelectors.forEach(selector => {
-      const elements = document.querySelectorAll(selector);
-      elements.forEach(element => {
-        if (element && element.style && element.style.display === 'none') {
-          element.style.display = '';
-          console.log('Restored "What\'s happening" element:', element);
-        }
-      });
-    });
-
-    // Also restore parent containers that might have been hidden
-    const allElements = document.querySelectorAll('*');
-    allElements.forEach(element => {
-      if (element && element.style && element.style.display === 'none') {
-        // Check if this element contains or is related to "What's happening" content
-        const hasWhatsHappeningContent = element.querySelector('div[aria-label="Timeline: Trending now"]') ||
-                                        element.textContent?.includes('Trending') ||
-                                        element.textContent?.includes('What\'s happening');
-        
-        if (hasWhatsHappeningContent) {
-          element.style.display = '';
-          console.log('Restored "What\'s happening" related element:', element);
-        }
-      }
+    document.querySelectorAll('[data-xplus-whats-happening-display]').forEach(element => {
+      element.style.display = element.getAttribute('data-xplus-whats-happening-display');
+      element.removeAttribute('data-xplus-whats-happening-display');
+      console.log('Restored "What\'s happening" element or container:', element);
     });
 
     this.isProcessing = false;
