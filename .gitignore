@@ -15,6 +15,7 @@ WebStore/
 .DS_Store
 Thumbs.db
 *.log
+.vs/
 
 # IDE Files
 .vscode/

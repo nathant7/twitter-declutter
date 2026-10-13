@@ -4,7 +4,6 @@ document.addEventListener('DOMContentLoaded', function() {
   const grokToggle = document.getElementById('grokToggle');
   const sidebarClutterToggle = document.getElementById('sidebarClutterToggle');
   const whoToFollowToggle = document.getElementById('whoToFollowToggle');
-  const profileFeaturesToggle = document.getElementById('profileFeaturesToggle');
   const twitterBirdToggle = document.getElementById('twitterBirdToggle');
   const whatsHappeningToggle = document.getElementById('whatsHappeningToggle');
 
@@ -22,9 +21,6 @@ document.addEventListener('DOMContentLoaded', function() {
       }
       if (result.settings.removeWhoToFollow !== undefined) {
         whoToFollowToggle.classList.toggle('active', result.settings.removeWhoToFollow);
-      }
-      if (result.settings.removeProfileFeatures !== undefined) {
-        profileFeaturesToggle.classList.toggle('active', result.settings.removeProfileFeatures);
       }
              if (result.settings.restoreTwitterBird !== undefined) {
          twitterBirdToggle.classList.toggle('active', result.settings.restoreTwitterBird);
@@ -158,37 +154,6 @@ document.addEventListener('DOMContentLoaded', function() {
         chrome.tabs.sendMessage(tabs[0].id, {
           action: 'updateSettings',
           settings: { removeWhoToFollow: newState }
-        }, function(response) {
-          if (chrome.runtime.lastError) {
-            console.log('Error sending message:', chrome.runtime.lastError);
-          } else {
-            console.log('Settings updated successfully');
-          }
-        });
-      }
-    });
-  });
-
-  // Handle profile features toggle
-  profileFeaturesToggle.addEventListener('click', function() {
-    const isActive = profileFeaturesToggle.classList.contains('active');
-    const newState = !isActive;
-    
-    profileFeaturesToggle.classList.toggle('active', newState);
-    
-    // Save to storage
-    chrome.storage.local.get(['settings'], function(result) {
-      const currentSettings = result.settings || {};
-      currentSettings.removeProfileFeatures = newState;
-      chrome.storage.local.set({ settings: currentSettings });
-    });
-    
-    // Send updated settings to content script
-    chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-      if (tabs[0] && tabs[0].url && (tabs[0].url.includes('twitter.com') || tabs[0].url.includes('x.com'))) {
-        chrome.tabs.sendMessage(tabs[0].id, {
-          action: 'updateSettings',
-          settings: { removeProfileFeatures: newState }
         }, function(response) {
           if (chrome.runtime.lastError) {
             console.log('Error sending message:', chrome.runtime.lastError);

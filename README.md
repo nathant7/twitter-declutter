@@ -5,7 +5,7 @@ Now available on the [Chrome Web Store!](https://chromewebstore.google.com/detai
 ## ✨ Features
 
 ###  **Remove Premium Ads**
-- Removes "Subscribe to Premium" prompts from the sidebar
+- Removes the full "Subscribe to Premium" card from the sidebar
 - Hides the Premium tab
 - Eliminates profile Premium ads within profiles
 
@@ -25,10 +25,6 @@ Now available on the [Chrome Web Store!](https://chromewebstore.google.com/detai
 ###  **Remove What's Happening**
 - Removes the "What's happening" sidebar content
 
-###  **Remove Profile Features**
-- Removes the "Highlights" tab from profiles
-- Hides the "Articles" tab from profiles
-
 ###  **Give 'em the bird!**
 - Replaces X branding with the original Twitter bird logo
 - Changes "Post" buttons back to "Tweet"
@@ -41,13 +37,15 @@ Now available on the [Chrome Web Store!](https://chromewebstore.google.com/detai
    git clone https://github.com/nathant7/twitter-declutter.git
    ```
 
-2. Open Chrome and navigate to `chrome://extensions/`
+2. In Chrome, navigate to `chrome://extensions/`. In Firefox, navigate to `about:debugging#/runtime/this-firefox`.
 
-3. Enable "Developer mode" in the top right
+3. In Chrome, enable "Developer mode" in the top right. In Firefox, click "Load Temporary Add-on..."
 
-4. Click "Load unpacked" and select the project folder
+4. In Chrome, click "Load unpacked" and select the project folder. In Firefox, select the `manifest.json` file in the project folder.
 
 5. The extension will now be installed and ready to use!
+
+Firefox temporary add-ons are removed when Firefox closes. Permanent Firefox installation requires a Mozilla-signed release.
 
 ### From Chrome Web Store
 [Click me](https://chromewebstore.google.com/detail/x-4-u/mhacmebldfeefobhodmfmdmhmgidpegc) and please consider leaving a nice review I would very much appreciate it! :)
@@ -77,10 +75,10 @@ Now available on the [Chrome Web Store!](https://chromewebstore.google.com/detai
 - `SidebarClutterRemover` - Cleans up sidebar navigation
 - `WhoToFollowRemover` - Removes follow suggestions
 - `WhatsHappeningRemover` - Hides trending topics
-- `ProfileFeaturesRemover` - Removes profile-specific features
 - `TwitterBirdRestorer` - Restores classic Twitter branding
 
 ### Browser Support
+- ✅ Firefox
 - ✅ Brave
 - ✅ Chrome
 - ✅ Edge (Chromium-based)

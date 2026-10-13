@@ -32,7 +32,6 @@ class SettingsManager {
   removePremiumAds: false,
   removeSidebarClutter: false,
       removeWhoToFollow: false,
-      removeProfileFeatures: false,
       removeGrok: false,
       restoreTwitterBird: false,
       removeWhatsHappening: false
@@ -81,6 +80,7 @@ class PremiumRemover {
     let foundElements = 0;
 
     const premiumUpsellSelectors = [
+      'aside[aria-label="Subscribe to Premium"]',
       '[data-testid="super-upsell-UpsellCardRenderProperties"]',
       '[data-testid="super-upsell"]',
       '[data-testid="upsell"]',
@@ -224,6 +224,7 @@ class PremiumRemover {
     console.log('Restoring premium ads...');
 
     const premiumUpsellSelectors = [
+      'aside[aria-label="Subscribe to Premium"]',
     '[data-testid="super-upsell-UpsellCardRenderProperties"]',
     '[data-testid="super-upsell"]',
     '[data-testid="upsell"]',
@@ -1293,129 +1294,12 @@ class WhoToFollowRemover {
   }
 }
 
-// Profile Features Remover 
-class ProfileFeaturesRemover {
-  constructor() {
-    this.isProcessing = false;
-  }
-
-  removeProfileFeatures() {
-    if (this.isProcessing) return;
-    this.isProcessing = true;
-
-    console.log('Attempting to remove profile features (Articles, Highlights)...');
-
-    let foundElements = 0;
-
-    const profileFeatureSelectors = [
-      'a[href*="/highlights"]',
-      'a[href*="/articles"][role="tab"]',
-      'a[role="tab"][href*="/highlights"]',
-      'a[role="tab"][href*="/articles"]'
-    ];
-
-    profileFeatureSelectors.forEach(selector => {
-      try {
-        const elements = document.querySelectorAll(selector);
-        console.log(`Found ${elements.length} profile feature elements for selector: ${selector}`);
-        elements.forEach(element => {
-          if (element && element.style && element.style.display !== 'none') {
-
-            element.style.display = 'none';
-            foundElements++;
-            console.log('Hidden profile feature tab:', element);
-
-
-            const parentContainer = element.closest('div[role="presentation"]');
-            if (parentContainer && parentContainer.style && parentContainer.style.display !== 'none') {
-              parentContainer.style.display = 'none';
-              foundElements++;
-              console.log('Hidden profile feature parent container:', parentContainer);
-            }
-          }
-        });
-      } catch (e) {
-        console.log(`Error with profile feature selector ${selector}:`, e);
-      }
-    });
-
-
-  const allElements = document.querySelectorAll('*');
-  allElements.forEach(element => {
-    const text = element.textContent;
-      if (text && (text.trim() === 'Articles' || text.trim() === 'Highlights')) {
-        if (element.tagName === 'SPAN' && element.classList.contains('css-1jxf684')) {
-
-          const tabLink = element.closest('a[role="tab"]');
-          if (tabLink && tabLink.style && tabLink.style.display !== 'none') {
-            tabLink.style.display = 'none';
-            foundElements++;
-            console.log('Hidden profile feature tab by text:', tabLink);
-
-
-            const parentContainer = tabLink.closest('div[role="presentation"]');
-            if (parentContainer && parentContainer.style && parentContainer.style.display !== 'none') {
-              parentContainer.style.display = 'none';
-              foundElements++;
-              console.log('Hidden profile feature parent container by text:', parentContainer);
-            }
-          }
-        }
-      }
-    });
-
-    console.log(`Total profile feature elements hidden: ${foundElements}`);
-    this.isProcessing = false;
-  }
-
-  restoreProfileFeatures() {
-    if (this.isProcessing) return;
-    this.isProcessing = true;
-
-    console.log('Restoring profile features (Articles, Highlights)...');
-
-    const profileFeatureSelectors = [
-      'a[href*="/highlights"]',
-      'a[href*="/articles"][role="tab"]',
-      'a[role="tab"][href*="/highlights"]',
-      'a[role="tab"][href*="/articles"]'
-    ];
-
-    profileFeatureSelectors.forEach(selector => {
-      const elements = document.querySelectorAll(selector);
-      elements.forEach(element => {
-        if (element && element.style && element.style.display === 'none') {
-          element.style.display = '';
-          console.log('Restored profile feature tab:', element);
-        }
-      });
-    });
-
-
-    const allElements = document.querySelectorAll('*');
-    allElements.forEach(element => {
-      if (element && element.style && element.style.display === 'none') {
-        if (element.getAttribute('role') === 'presentation') {
-          const hasHiddenTab = element.querySelector('a[role="tab"][style*="display: none"]');
-          if (!hasHiddenTab) {
-            element.style.display = '';
-            console.log('Restored profile feature parent container:', element);
-        }
-      }
-    }
-  });
-  
-    this.isProcessing = false;
-  }
-}
-
 // Initialize modules
 const settingsManager = new SettingsManager();
 const premiumRemover = new PremiumRemover();
 const grokRemover = new GrokRemover();
 const sidebarClutterRemover = new SidebarClutterRemover();
 const whoToFollowRemover = new WhoToFollowRemover();
-const profileFeaturesRemover = new ProfileFeaturesRemover();
 const twitterBirdRestorer = new TwitterBirdRestorer();
 const whatsHappeningRemover = new WhatsHappeningRemover();
 
@@ -1427,7 +1311,7 @@ function applyFeatures() {
   if (isProcessing) return;
   
   const settings = settingsManager.getSettings();
-  console.log('Applying features, removePremiumAds:', settings.removePremiumAds, 'removeSidebarClutter:', settings.removeSidebarClutter, 'removeWhoToFollow:', settings.removeWhoToFollow, 'removeProfileFeatures:', settings.removeProfileFeatures, 'removeGrok:', settings.removeGrok, 'restoreTwitterBird:', settings.restoreTwitterBird, 'removeWhatsHappening:', settings.removeWhatsHappening);
+  console.log('Applying features, removePremiumAds:', settings.removePremiumAds, 'removeSidebarClutter:', settings.removeSidebarClutter, 'removeWhoToFollow:', settings.removeWhoToFollow, 'removeGrok:', settings.removeGrok, 'restoreTwitterBird:', settings.restoreTwitterBird, 'removeWhatsHappening:', settings.removeWhatsHappening);
   
   if (settings.removePremiumAds) {
     premiumRemover.removePremiumAds();
@@ -1455,12 +1339,6 @@ function applyFeatures() {
     whoToFollowRemover.restoreWhoToFollow();
 
     whoToFollowRemover.restoreProfileWhoToFollow();
-  }
-
-  if (settings.removeProfileFeatures) {
-    profileFeaturesRemover.removeProfileFeatures();
-  } else {
-    profileFeaturesRemover.restoreProfileFeatures();
   }
 
   if (settings.restoreTwitterBird) {
@@ -1536,8 +1414,7 @@ window.testDeclutter = function () {
   settingsManager.updateSettings({
     removePremiumAds: true,
     removeSidebarClutter: true,
-    removeWhoToFollow: true,
-    removeProfileFeatures: true
+    removeWhoToFollow: true
   });
   applyFeatures();
 };
