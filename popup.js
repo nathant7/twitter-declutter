@@ -217,9 +217,25 @@ document.addEventListener('DOMContentLoaded', function() {
         const isHidden = getEffectiveArea(item, settings) === 'hidden';
         const unavailableReason = getUnavailableReason(item, settings);
         if (unavailableReason) row.classList.add('nav-item-unavailable');
-        visibilityButton.innerHTML = isHidden
-          ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3l18 18M10.6 10.6a2 2 0 002.8 2.8M9.9 5.2A10.8 10.8 0 0112 5c5 0 8.5 4.5 9.5 7-.4 1.1-1.2 2.2-2.2 3.2M6.2 6.2C3.8 7.8 2.7 10 2.5 12c.5 1.3 1.4 2.6 2.6 3.6A10.5 10.5 0 0012 19c1.3 0 2.5-.3 3.6-.8" /></svg>'
-          : '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12S6 5 12 5s9.5 7 9.5 7-3.5 7-9.5 7-9.5-7-9.5-7z" /><circle cx="12" cy="12" r="3" /></svg>';
+        const visibilityIcon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        visibilityIcon.setAttribute('viewBox', '0 0 24 24');
+        visibilityIcon.setAttribute('aria-hidden', 'true');
+        const eyePath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        eyePath.setAttribute(
+          'd',
+          isHidden
+            ? 'M3 3l18 18M10.6 10.6a2 2 0 002.8 2.8M9.9 5.2A10.8 10.8 0 0112 5c5 0 8.5 4.5 9.5 7-.4 1.1-1.2 2.2-2.2 3.2M6.2 6.2C3.8 7.8 2.7 10 2.5 12c.5 1.3 1.4 2.6 2.6 3.6A10.5 10.5 0 0012 19c1.3 0 2.5-.3 3.6-.8'
+            : 'M2.5 12S6 5 12 5s9.5 7 9.5 7-3.5 7-9.5 7-9.5-7-9.5-7z'
+        );
+        visibilityIcon.appendChild(eyePath);
+        if (!isHidden) {
+          const pupil = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+          pupil.setAttribute('cx', '12');
+          pupil.setAttribute('cy', '12');
+          pupil.setAttribute('r', '3');
+          visibilityIcon.appendChild(pupil);
+        }
+        visibilityButton.appendChild(visibilityIcon);
         visibilityButton.title = `${isHidden ? 'Show' : 'Hide'} ${item.label}`;
         visibilityButton.setAttribute('aria-label', `${isHidden ? 'Show' : 'Hide'} ${item.label} in sidebar`);
         visibilityButton.setAttribute('aria-pressed', String(isHidden));

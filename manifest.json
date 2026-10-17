@@ -3,11 +3,12 @@
   "browser_specific_settings": {
     "gecko": {
       "id": "twitter-declutter@nathant7",
-      "strict_min_version": "109.0"
+      "strict_min_version": "109.0",
+      "data_collection_permissions": ["none"]
     }
   },
   "name": "X+ // A Twitter Declutter Extension",
-  "version": "2026.01.21",
+  "version": "2026.10.17",
   "description": "Clean up your X/Twitter experience by removing ads, clutter, and unwanted sections",
   "permissions": [
     "storage",
@@ -24,9 +25,9 @@
     "default_popup": "popup.html"
   },
   "icons": {
-    "16": "logo.png",
-    "32": "logo.png",
-    "48": "logo.png",
-    "128": "logo.png"
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
   }
 }
