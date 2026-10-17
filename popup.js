@@ -2,7 +2,6 @@
 document.addEventListener('DOMContentLoaded', function() {
   const premiumAdsToggle = document.getElementById('premiumAdsToggle');
   const grokToggle = document.getElementById('grokToggle');
-  const sidebarClutterToggle = document.getElementById('sidebarClutterToggle');
   const whoToFollowToggle = document.getElementById('whoToFollowToggle');
   const twitterBirdToggle = document.getElementById('twitterBirdToggle');
   const whatsHappeningToggle = document.getElementById('whatsHappeningToggle');
@@ -14,29 +13,88 @@ document.addEventListener('DOMContentLoaded', function() {
   let navigationInventory = [];
   let currentSettings = {};
 
+  function setSwitchState(toggle, enabled) {
+    toggle.classList.toggle('active', enabled);
+    toggle.setAttribute('aria-checked', String(enabled));
+  }
+
+  function syncSettingsControls(settings) {
+    currentSettings = settings;
+    [
+      [premiumAdsToggle, 'removePremiumAds'],
+      [grokToggle, 'removeGrok'],
+      [whoToFollowToggle, 'removeWhoToFollow'],
+      [twitterBirdToggle, 'restoreTwitterBird'],
+      [whatsHappeningToggle, 'removeWhatsHappening']
+    ].forEach(([toggle, setting]) => setSwitchState(toggle, Boolean(settings[setting])));
+    document.getElementById('extensionTitle').textContent =
+      settings.restoreTwitterBird ? 'Twitter+' : 'X+';
+  }
+
+  function persistSettings(settings, context) {
+    chrome.storage.local.set({ settings }, function() {
+      if (chrome.runtime.lastError) {
+        console.error(`Unable to save ${context}:`, chrome.runtime.lastError);
+      }
+    });
+  }
+
+  function saveAndApplySetting(name, value) {
+    currentSettings = { ...currentSettings, [name]: value };
+    persistSettings(currentSettings, `setting "${name}"`);
+
+    chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
+      if (chrome.runtime.lastError) {
+        console.error('Unable to find the active tab:', chrome.runtime.lastError);
+        return;
+      }
+
+      const tab = tabs[0];
+      if (!tab?.id || !tab.url || !/(^|\.)((x|twitter)\.com)$/.test(new URL(tab.url).hostname)) return;
+
+      chrome.tabs.sendMessage(tab.id, {
+        action: 'updateSettings',
+        settings: { [name]: value }
+      }, function() {
+        if (chrome.runtime.lastError) {
+          console.debug(`Setting "${name}" will apply when the page is available:`, chrome.runtime.lastError.message);
+        }
+      });
+    });
+  }
+
+  function bindFeatureToggle(toggle, setting, onChange = () => {}) {
+    toggle.addEventListener('click', function() {
+      const enabled = !toggle.classList.contains('active');
+      setSwitchState(toggle, enabled);
+      onChange(enabled);
+      saveAndApplySetting(setting, enabled);
+    });
+  }
+
   configureNavigationButton.addEventListener('click', function() {
-    navigationCustomizer.classList.toggle('open');
+    const isOpen = navigationCustomizer.classList.toggle('open');
+    configureNavigationButton.setAttribute('aria-expanded', String(isOpen));
+    if (isOpen && !currentSettings.removeSidebarClutter) {
+      currentSettings = { ...currentSettings, removeSidebarClutter: true };
+      persistSettings(currentSettings, 'sidebar customization settings');
+    }
   });
 
   function saveNavigationConfig() {
     navigationConfig = navigationConfig.map((item, order) => ({ ...item, order }));
-    chrome.storage.local.get(['settings'], function(result) {
-      const currentSettings = result.settings || {};
-      currentSettings.removeSidebarClutter = true;
-      currentSettings.sidebarNavigationItems = navigationConfig.map(item => ({
+    currentSettings = {
+      ...currentSettings,
+      removeSidebarClutter: true,
+      sidebarNavigationItems: navigationConfig.map(item => ({
         id: item.id,
         kind: item.kind,
         area: item.area,
         visible: item.area !== 'hidden',
         order: item.order
-      }));
-      chrome.storage.local.set({ settings: currentSettings }, function() {
-        if (chrome.runtime.lastError) {
-          console.error('Unable to save navigation settings:', chrome.runtime.lastError);
-        }
-      });
-      sidebarClutterToggle.classList.add('active');
-    });
+      }))
+    };
+    persistSettings(currentSettings, 'navigation settings');
   }
 
   restoreNavigationButton.addEventListener('click', function() {
@@ -120,7 +178,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (!navigationConfig.length) {
       const empty = document.createElement('p');
       empty.className = 'nav-customizer-empty';
-      empty.textContent = 'Open X in this tab, enable Remove Sidebar Clutter, then reopen this panel to load the navigation items.';
+      empty.textContent = 'Open X in this tab to load sidebar items.';
       navigationItemsList.appendChild(empty);
       return;
     }
@@ -224,293 +282,33 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // Load current settings from storage
   chrome.storage.local.get(['settings', 'navigationItems'], function(result) {
-    const navigationInventory = (result.navigationItems || []).filter(item => item.area !== 'more');
-    renderNavigationItems(navigationInventory, result.settings || {});
-    if (result.settings) {
-      if (result.settings.removePremiumAds !== undefined) {
-        premiumAdsToggle.classList.toggle('active', result.settings.removePremiumAds);
-      }
-      if (result.settings.removeGrok !== undefined) {
-        grokToggle.classList.toggle('active', result.settings.removeGrok);
-      }
-      if (result.settings.removeSidebarClutter !== undefined) {
-        sidebarClutterToggle.classList.toggle('active', result.settings.removeSidebarClutter);
-      }
-      if (result.settings.removeWhoToFollow !== undefined) {
-        whoToFollowToggle.classList.toggle('active', result.settings.removeWhoToFollow);
-      }
-             if (result.settings.restoreTwitterBird !== undefined) {
-         twitterBirdToggle.classList.toggle('active', result.settings.restoreTwitterBird);
-         
-         // Set the title based on the saved state
-         const titleElement = document.getElementById('extensionTitle');
-         if (result.settings.restoreTwitterBird) {
-           titleElement.textContent = 'Twitter+';
-           titleElement.classList.add('twitter-mode');
-         } else {
-           titleElement.textContent = 'X+';
-           titleElement.classList.remove('twitter-mode');
-         }
-       }
-       if (result.settings.removeWhatsHappening !== undefined) {
-         whatsHappeningToggle.classList.toggle('active', result.settings.removeWhatsHappening);
-       }
+    if (chrome.runtime.lastError) {
+      console.error('Unable to load extension settings:', chrome.runtime.lastError);
+      return;
     }
+    const navigationInventory = (result.navigationItems || []).filter(item => item.area !== 'more');
+    const settings = result.settings || {};
+    syncSettingsControls(settings);
+    renderNavigationItems(navigationInventory, settings);
   });
 
   chrome.storage.onChanged.addListener(function(changes, areaName) {
     if (areaName === 'local' && changes.settings?.newValue) {
-      currentSettings = changes.settings.newValue;
+      syncSettingsControls(changes.settings.newValue);
       renderNavigationItems(navigationInventory, currentSettings);
     }
     if (areaName === 'local' && changes.navigationItems) {
-      chrome.storage.local.get(['settings'], function(result) {
-        const navigationInventory = (changes.navigationItems.newValue || []).filter(item => item.area !== 'more');
-        renderNavigationItems(navigationInventory, result.settings || {});
-      });
+      navigationInventory = (changes.navigationItems.newValue || []).filter(item => item.area !== 'more');
+      renderNavigationItems(navigationInventory, currentSettings);
     }
   });
 
-  // Handle premium ads toggle
-  premiumAdsToggle.addEventListener('click', function() {
-    const isActive = premiumAdsToggle.classList.contains('active');
-    const newState = !isActive;
-    
-    premiumAdsToggle.classList.toggle('active', newState);
-    
-    // Save to storage
-    chrome.storage.local.get(['settings'], function(result) {
-      const currentSettings = result.settings || {};
-      currentSettings.removePremiumAds = newState;
-      chrome.storage.local.set({ settings: currentSettings });
-    });
-    
-    // Send updated settings to content script
-    chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-      if (tabs[0] && tabs[0].url && (tabs[0].url.includes('twitter.com') || tabs[0].url.includes('x.com'))) {
-        chrome.tabs.sendMessage(tabs[0].id, {
-          action: 'updateSettings',
-          settings: { removePremiumAds: newState }
-        }, function(response) {
-          if (chrome.runtime.lastError) {
-            console.log('Error sending message:', chrome.runtime.lastError);
-          } else {
-            console.log('Settings updated successfully');
-          }
-        });
-      }
-    });
+  bindFeatureToggle(premiumAdsToggle, 'removePremiumAds');
+  bindFeatureToggle(grokToggle, 'removeGrok');
+  bindFeatureToggle(whoToFollowToggle, 'removeWhoToFollow');
+  bindFeatureToggle(twitterBirdToggle, 'restoreTwitterBird', enabled => {
+    document.getElementById('extensionTitle').textContent = enabled ? 'Twitter+' : 'X+';
   });
+  bindFeatureToggle(whatsHappeningToggle, 'removeWhatsHappening');
 
-  // Handle grok toggle
-  grokToggle.addEventListener('click', function() {
-    const isActive = grokToggle.classList.contains('active');
-    const newState = !isActive;
-    
-    grokToggle.classList.toggle('active', newState);
-    
-    // Save to storage
-    chrome.storage.local.get(['settings'], function(result) {
-      const currentSettings = result.settings || {};
-      currentSettings.removeGrok = newState;
-      chrome.storage.local.set({ settings: currentSettings });
-    });
-    
-    // Send updated settings to content script
-    chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-      if (tabs[0] && tabs[0].url && (tabs[0].url.includes('twitter.com') || tabs[0].url.includes('x.com'))) {
-        chrome.tabs.sendMessage(tabs[0].id, {
-          action: 'updateSettings',
-          settings: { removeGrok: newState }
-        }, function(response) {
-          if (chrome.runtime.lastError) {
-            console.log('Error sending message:', chrome.runtime.lastError);
-          } else {
-            console.log('Settings updated successfully');
-          }
-        });
-      }
-    });
-  });
-
-  // Handle sidebar clutter toggle
-  sidebarClutterToggle.addEventListener('click', function() {
-    const isActive = sidebarClutterToggle.classList.contains('active');
-    const newState = !isActive;
-    
-    sidebarClutterToggle.classList.toggle('active', newState);
-    
-    // Save to storage
-    chrome.storage.local.get(['settings'], function(result) {
-      const currentSettings = result.settings || {};
-      currentSettings.removeSidebarClutter = newState;
-      chrome.storage.local.set({ settings: currentSettings });
-    });
-    
-    // Send updated settings to content script
-    chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-      if (tabs[0] && tabs[0].url && (tabs[0].url.includes('twitter.com') || tabs[0].url.includes('x.com'))) {
-        chrome.tabs.sendMessage(tabs[0].id, {
-          action: 'updateSettings',
-          settings: { removeSidebarClutter: newState }
-        }, function(response) {
-          if (chrome.runtime.lastError) {
-            console.log('Error sending message:', chrome.runtime.lastError);
-          } else {
-            console.log('Settings updated successfully');
-          }
-        });
-      }
-    });
-  });
-
-  // Handle who to follow toggle
-  whoToFollowToggle.addEventListener('click', function() {
-    const isActive = whoToFollowToggle.classList.contains('active');
-    const newState = !isActive;
-    
-    whoToFollowToggle.classList.toggle('active', newState);
-    
-    // Save to storage
-    chrome.storage.local.get(['settings'], function(result) {
-      const currentSettings = result.settings || {};
-      currentSettings.removeWhoToFollow = newState;
-      chrome.storage.local.set({ settings: currentSettings });
-    });
-    
-    // Send updated settings to content script
-    chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-      if (tabs[0] && tabs[0].url && (tabs[0].url.includes('twitter.com') || tabs[0].url.includes('x.com'))) {
-        chrome.tabs.sendMessage(tabs[0].id, {
-          action: 'updateSettings',
-          settings: { removeWhoToFollow: newState }
-        }, function(response) {
-          if (chrome.runtime.lastError) {
-            console.log('Error sending message:', chrome.runtime.lastError);
-          } else {
-            console.log('Settings updated successfully');
-          }
-        });
-      }
-    });
-  });
-
-  // Handle twitter bird toggle
-  twitterBirdToggle.addEventListener('click', function() {
-    const isActive = twitterBirdToggle.classList.contains('active');
-    const newState = !isActive;
-    
-    twitterBirdToggle.classList.toggle('active', newState);
-    
-    // Animate the title change
-    const titleElement = document.getElementById('extensionTitle');
-    if (newState) {
-      // Change to Twitter mode
-      titleElement.textContent = 'Twitter+';
-      titleElement.classList.add('twitter-mode');
-    } else {
-      // Change back to X mode
-      titleElement.textContent = 'X+';
-      titleElement.classList.remove('twitter-mode');
-    }
-    
-    // Save to storage
-    chrome.storage.local.get(['settings'], function(result) {
-      const currentSettings = result.settings || {};
-      currentSettings.restoreTwitterBird = newState;
-      chrome.storage.local.set({ settings: currentSettings });
-    });
-    
-    // Send updated settings to content script
-    chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-      if (tabs[0] && tabs[0].url && (tabs[0].url.includes('twitter.com') || tabs[0].url.includes('x.com'))) {
-        chrome.tabs.sendMessage(tabs[0].id, {
-          action: 'updateSettings',
-          settings: { restoreTwitterBird: newState }
-        }, function(response) {
-          if (chrome.runtime.lastError) {
-            console.log('Error sending message:', chrome.runtime.lastError);
-          } else {
-            console.log('Settings updated successfully');
-          }
-        });
-      }
-    });
-  });
-
-  // Handle whats happening toggle
-  whatsHappeningToggle.addEventListener('click', function() {
-    const isActive = whatsHappeningToggle.classList.contains('active');
-    const newState = !isActive;
-    
-    whatsHappeningToggle.classList.toggle('active', newState);
-    
-    // Save to storage
-    chrome.storage.local.get(['settings'], function(result) {
-      const currentSettings = result.settings || {};
-      currentSettings.removeWhatsHappening = newState;
-      chrome.storage.local.set({ settings: currentSettings });
-    });
-    
-    // Send updated settings to content script
-    chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-      if (tabs[0] && tabs[0].url && (tabs[0].url.includes('twitter.com') || tabs[0].url.includes('x.com'))) {
-        chrome.tabs.sendMessage(tabs[0].id, {
-          action: 'updateSettings',
-          settings: { removeWhatsHappening: newState }
-        }, function(response) {
-          if (chrome.runtime.lastError) {
-            console.log('Error sending message:', chrome.runtime.lastError);
-          } else {
-            console.log('Settings updated successfully');
-          }
-        });
-      }
-    });
-  });
-
-  // Secret title click handler
-  const titleElement = document.getElementById('extensionTitle');
-  titleElement.addEventListener('click', function() {
-    // Toggle the twitter bird feature
-    const isActive = twitterBirdToggle.classList.contains('active');
-    const newState = !isActive;
-    
-    // Update the toggle switch
-    twitterBirdToggle.classList.toggle('active', newState);
-    
-    // Animate the title change
-    if (newState) {
-      // Change to Twitter mode
-      titleElement.textContent = 'Twitter+';
-      titleElement.classList.add('twitter-mode');
-    } else {
-      // Change back to X mode
-      titleElement.textContent = 'X+';
-      titleElement.classList.remove('twitter-mode');
-    }
-    
-    // Save to storage
-    chrome.storage.local.get(['settings'], function(result) {
-      const currentSettings = result.settings || {};
-      currentSettings.restoreTwitterBird = newState;
-      chrome.storage.local.set({ settings: currentSettings });
-    });
-    
-    // Send updated settings to content script
-    chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-      if (tabs[0] && tabs[0].url && (tabs[0].url.includes('twitter.com') || tabs[0].url.includes('x.com'))) {
-        chrome.tabs.sendMessage(tabs[0].id, {
-          action: 'updateSettings',
-          settings: { restoreTwitterBird: newState }
-        }, function(response) {
-          if (chrome.runtime.lastError) {
-            console.log('Error sending message:', chrome.runtime.lastError);
-          } else {
-            console.log('Settings updated successfully');
-          }
-        });
-      }
-    });
-  });
 });

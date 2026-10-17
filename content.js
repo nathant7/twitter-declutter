@@ -16,20 +16,26 @@ class SettingsManager {
   }
 
   loadSettings() {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       chrome.storage.local.get(['settings'], (result) => {
-    if (result.settings) {
+        if (chrome.runtime.lastError) {
+          reject(new Error(`Unable to load settings: ${chrome.runtime.lastError.message}`));
+          return;
+        }
+        if (result.settings) {
           this.settings = { ...this.settings, ...result.settings };
         }
-        console.log('Loaded settings:', this.settings);
         resolve(this.settings);
       });
     });
   }
 
   saveSettings() {
-    chrome.storage.local.set({ settings: this.settings });
-    console.log('Saved settings:', this.settings);
+    chrome.storage.local.set({ settings: this.settings }, () => {
+      if (chrome.runtime.lastError) {
+        console.error('Unable to save settings:', chrome.runtime.lastError);
+      }
+    });
   }
 
   updateSettings(newSettings) {
@@ -40,6 +46,44 @@ class SettingsManager {
   getSettings() {
     return this.settings;
   }
+}
+
+const HIDDEN_BY_ATTRIBUTE = 'data-xplus-hidden-by';
+const ORIGINAL_DISPLAY_ATTRIBUTE = 'data-xplus-original-display';
+
+function hideElementForFeature(element, feature) {
+  if (!element?.style) return false;
+
+  const owners = new Set((element.getAttribute(HIDDEN_BY_ATTRIBUTE) || '').split(' ').filter(Boolean));
+  if (owners.has(feature)) {
+    element.style.display = 'none';
+    return false;
+  }
+  if (!owners.size) {
+    if (element.style.display === 'none') return false;
+    element.setAttribute(ORIGINAL_DISPLAY_ATTRIBUTE, element.style.display);
+  }
+
+  owners.add(feature);
+  element.setAttribute(HIDDEN_BY_ATTRIBUTE, Array.from(owners).join(' '));
+  element.style.display = 'none';
+  return true;
+}
+
+function restoreElementsForFeature(feature) {
+  document.querySelectorAll(`[${HIDDEN_BY_ATTRIBUTE}]`).forEach(element => {
+    const owners = new Set((element.getAttribute(HIDDEN_BY_ATTRIBUTE) || '').split(' ').filter(Boolean));
+    if (!owners.delete(feature)) return;
+
+    if (owners.size) {
+      element.setAttribute(HIDDEN_BY_ATTRIBUTE, Array.from(owners).join(' '));
+      return;
+    }
+
+    element.style.display = element.getAttribute(ORIGINAL_DISPLAY_ATTRIBUTE) || '';
+    element.removeAttribute(HIDDEN_BY_ATTRIBUTE);
+    element.removeAttribute(ORIGINAL_DISPLAY_ATTRIBUTE);
+  });
 }
 
 // Premium Remover
@@ -84,8 +128,7 @@ class PremiumRemover {
             }
           }
 
-          if (element && element.style && element.style.display !== 'none') {
-            element.style.display = 'none';
+          if (hideElementForFeature(element, 'premium')) {
             foundElements++;
             console.log('Hidden premium element:', element);
 
@@ -97,9 +140,10 @@ class PremiumRemover {
                 );
 
                 if (visibleChildren.length === 0) {
-                  currentParent.style.display = 'none';
-                  foundElements++;
-                  console.log(`Hidden empty premium parent container:`, currentParent);
+                  if (hideElementForFeature(currentParent, 'premium')) {
+                    foundElements++;
+                    console.log('Hidden empty premium parent container:', currentParent);
+                  }
                 } else {
                   break;
                 }
@@ -117,127 +161,6 @@ class PremiumRemover {
     });
 
     const otherPremiumSelectors = [
-    '[data-testid="premium"]',
-    '[data-testid="premiumTweet"]',
-    '[data-testid="premium-content"]',
-    '[data-testid="premium-ad"]',
-    '[data-testid="premiumPromotion"]',
-    '[data-testid="promotedTweet"]',
-      '[data-testid="ad"]'
-    ];
-
-    otherPremiumSelectors.forEach(selector => {
-      try {
-        const elements = document.querySelectorAll(selector);
-        console.log(`Found ${elements.length} elements for selector: ${selector}`);
-        elements.forEach(element => {
-          if (element && element.style && element.style.display !== 'none') {
-            element.style.display = 'none';
-            foundElements++;
-            console.log('Hidden premium element:', element);
-          }
-        });
-      } catch (e) {
-        console.log(`Error with selector ${selector}:`, e);
-      }
-    });
-
-    // Additional text-based detection for verification banners
-    const allElements = document.querySelectorAll('*');
-    allElements.forEach(element => {
-      const text = element.textContent;
-      if (text && (text.includes("You aren't verified yet") || text.includes("Get verified for boosted replies"))) {
-        // Look for the specific green background container first
-        let verificationBanner = element.closest('div[style*="background-color: rgb(0, 67, 41)"]');
-        
-        // If not found, look for the parent container that contains both text elements
-        if (!verificationBanner) {
-          verificationBanner = element.closest('div.css-175oi2r.r-1q9bdsx.r-1udh08x.r-18u37iz.r-1h0z5md');
-        }
-        
-        // If still not found, look for the outermost container
-        if (!verificationBanner) {
-          verificationBanner = element.closest('div.css-175oi2r.r-1xpp3t0');
-        }
-        
-        if (verificationBanner && verificationBanner.style && verificationBanner.style.display !== 'none') {
-          verificationBanner.style.display = 'none';
-          foundElements++;
-          console.log('Hidden verification banner by text detection:', verificationBanner);
-          
-          // Also hide parent containers if they become empty
-          let currentParent = verificationBanner.parentElement;
-          for (let i = 0; i < 3; i++) {
-            if (currentParent && currentParent !== document.body) {
-              const visibleChildren = Array.from(currentParent.children).filter(child =>
-                child.style.display !== 'none' && child !== verificationBanner
-              );
-
-              if (visibleChildren.length === 0) {
-                currentParent.style.display = 'none';
-                foundElements++;
-                console.log(`Hidden empty verification banner parent container:`, currentParent);
-              } else {
-                break;
-              }
-
-              currentParent = currentParent.parentElement;
-            } else {
-              break;
-            }
-          }
-        }
-      }
-    });
-
-    console.log(`Total premium elements hidden: ${foundElements}`);
-    this.isProcessing = false;
-  }
-
-  restorePremiumAds() {
-    if (this.isProcessing) return;
-    this.isProcessing = true;
-
-    console.log('Restoring premium ads...');
-
-    const premiumUpsellSelectors = [
-      'aside[aria-label="Subscribe to Premium"]',
-    '[data-testid="super-upsell-UpsellCardRenderProperties"]',
-    '[data-testid="super-upsell"]',
-    '[data-testid="upsell"]',
-      '[data-testid="verified_profile_visitor_upsell"]',
-    'div[aria-label*="Premium"]',
-    'span[aria-label*="Premium"]',
-      'a[aria-label*="Premium"]',
-      'a[href="/i/premium_sign_up"]',
-      'div[data-testid="verified_profile_visitor_upsell"]',
-      'div.css-175oi2r.r-yfoy6g.r-18bvks7.r-1867qdf.r-1phboty.r-rs99b7.r-1ifxtd0.r-1udh08x',
-      'div[style*="background-color: rgb(0, 67, 41)"]',
-      'a[href="/i/premium_sign_up"][role="link"]'
-    ];
-
-    premiumUpsellSelectors.forEach(selector => {
-      const elements = document.querySelectorAll(selector);
-      elements.forEach(element => {
-        if (element && element.style && element.style.display === 'none') {
-          element.style.display = '';
-          console.log('Restored premium element:', element);
-
-          let currentParent = element.parentElement;
-          for (let i = 0; i < 3; i++) {
-            if (currentParent && currentParent !== document.body && currentParent.style && currentParent.style.display === 'none') {
-              currentParent.style.display = '';
-              console.log(`Restored premium parent container:`, currentParent);
-              currentParent = currentParent.parentElement;
-            } else {
-              break;
-            }
-          }
-        }
-      });
-    });
-
-    const otherPremiumSelectors = [
       '[data-testid="premium"]',
       '[data-testid="premiumTweet"]',
       '[data-testid="premium-content"]',
@@ -248,43 +171,76 @@ class PremiumRemover {
     ];
 
     otherPremiumSelectors.forEach(selector => {
-      const elements = document.querySelectorAll(selector);
-      elements.forEach(element => {
-        if (element && element.style) {
-          element.style.display = '';
-        }
-      });
-    });
-
-    // Restore verification banners by text detection
-    const allElements = document.querySelectorAll('*');
-    allElements.forEach(element => {
-      if (element && element.style && element.style.display === 'none') {
-        const text = element.textContent;
-        if (text && (text.includes("You aren't verified yet") || text.includes("Get verified for boosted replies"))) {
-          element.style.display = '';
-          console.log('Restored verification banner by text detection:', element);
-          
-          // Also restore parent containers
-          let currentParent = element.parentElement;
-          for (let i = 0; i < 3; i++) {
-            if (currentParent && currentParent !== document.body && currentParent.style && currentParent.style.display === 'none') {
-              currentParent.style.display = '';
-              console.log(`Restored verification banner parent container:`, currentParent);
-              currentParent = currentParent.parentElement;
-            } else {
-              break;
-            }
+      try {
+        const elements = document.querySelectorAll(selector);
+        console.log(`Found ${elements.length} elements for selector: ${selector}`);
+        elements.forEach(element => {
+          if (hideElementForFeature(element, 'premium')) {
+            foundElements++;
+            console.log('Hidden premium element:', element);
           }
-        }
+        });
+      } catch (e) {
+        console.log(`Error with selector ${selector}:`, e);
       }
     });
+
+    // Additional text-based detection for verification banners
+    const textWalker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    const processedBanners = new Set();
+    let textNode;
+    while ((textNode = textWalker.nextNode())) {
+      const text = textNode.nodeValue || '';
+      if (!text.includes("You aren't verified yet") && !text.includes('Get verified for boosted replies')) {
+        continue;
+      }
+
+      const element = textNode.parentElement;
+      if (!element) continue;
+
+      const verificationBanner =
+        element.closest('div[style*="background-color: rgb(0, 67, 41)"]') ||
+        element.closest('div.css-175oi2r.r-1q9bdsx.r-1udh08x.r-18u37iz.r-1h0z5md') ||
+        element.closest('div.css-175oi2r.r-1xpp3t0');
+      if (!verificationBanner || processedBanners.has(verificationBanner)) continue;
+      processedBanners.add(verificationBanner);
+
+      if (!hideElementForFeature(verificationBanner, 'premium')) continue;
+      foundElements++;
+      console.log('Hidden verification banner by text detection:', verificationBanner);
+
+      let currentParent = verificationBanner.parentElement;
+      for (let i = 0; i < 3; i++) {
+        if (!currentParent || currentParent === document.body) break;
+
+        const visibleChildren = Array.from(currentParent.children).filter(child =>
+          child.style.display !== 'none' && child !== verificationBanner
+        );
+        if (visibleChildren.length !== 0) break;
+
+        if (hideElementForFeature(currentParent, 'premium')) {
+          foundElements++;
+          console.log('Hidden empty verification banner parent container:', currentParent);
+        }
+        currentParent = currentParent.parentElement;
+      }
+    }
+
+    console.log(`Total premium elements hidden: ${foundElements}`);
+    this.isProcessing = false;
+  }
+
+  restorePremiumAds() {
+    if (this.isProcessing) return;
+    this.isProcessing = true;
+
+    restoreElementsForFeature('premium');
 
     this.isProcessing = false;
   }
 }
 
-// Grok Remover 
+// Grok Remover
 class GrokRemover {
   constructor() {
     this.isProcessing = false;
@@ -304,48 +260,40 @@ class GrokRemover {
       '[data-testid="GrokDrawer"]',
       'button[aria-label="Enhance your post with Grok"]',
       '[data-testid="grokImgGen"]'
-  ];
+    ];
 
-  let foundElements = 0;
+    let foundElements = 0;
 
     grokSelectors.forEach(selector => {
-    try {
-      const elements = document.querySelectorAll(selector);
+      try {
+        const elements = document.querySelectorAll(selector);
         console.log(`Found ${elements.length} Grok elements for selector: ${selector}`);
-      elements.forEach(element => {
-        if (element && element.style && element.style.display !== 'none') {
-          element.style.display = 'none';
-          foundElements++;
+        elements.forEach(element => {
+          if (hideElementForFeature(element, 'grok')) {
+            foundElements++;
             console.log('Hidden Grok element:', element);
-        }
-      });
-    } catch (e) {
-      console.log(`Error with selector ${selector}:`, e);
-    }
-  });
-
-  const allElements = document.querySelectorAll('*');
-  allElements.forEach(element => {
-      const text = element.textContent;
-      if (text && text.includes('Grok')) {
-        const navItem = element.closest('a[role="link"]') || element.closest('[data-testid]');
-        if (navItem && navItem.style.display !== 'none') {
-          const href = navItem.getAttribute('href');
-          const role = navItem.getAttribute('role');
-          const dataTestId = navItem.getAttribute('data-testid');
-
-          if (role === 'tab') {
-            return;
           }
+        });
+      } catch (error) {
+        console.error(`Unable to process Grok selector "${selector}":`, error);
+      }
+    });
 
-          const hasSidebarHref = href && (href.startsWith('/i/') || href.includes('/grok'));
-          const hasSidebarTestId = dataTestId && ['grok'].includes(dataTestId);
+    const navigationCandidates = document.querySelectorAll('a[role="link"], [data-testid]');
+    navigationCandidates.forEach(navItem => {
+      if (navItem.matches('[data-testid]') && navItem.closest('a[role="link"]')) return;
+      if (!navItem.textContent?.includes('Grok')) return;
+      const href = navItem.getAttribute('href');
+      const role = navItem.getAttribute('role');
+      const dataTestId = navItem.getAttribute('data-testid');
+      if (role === 'tab') return;
 
-          if (hasSidebarHref || hasSidebarTestId) {
-            navItem.style.display = 'none';
-        foundElements++;
-            console.log('Hidden text-based Grok element:', navItem);
-          }
+      const hasSidebarHref = href && (href.startsWith('/i/') || href.includes('/grok'));
+      const hasSidebarTestId = dataTestId === 'grok';
+      if (hasSidebarHref || hasSidebarTestId) {
+        if (hideElementForFeature(navItem, 'grok')) {
+          foundElements++;
+          console.log('Hidden text-based Grok element:', navItem);
         }
       }
     });
@@ -358,51 +306,7 @@ class GrokRemover {
     if (this.isProcessing) return;
     this.isProcessing = true;
 
-    console.log('Restoring Grok...');
-
-    const grokSelectors = [
-      'a[href="/i/grok"]',
-      '[data-testid="grok"]',
-      'button[aria-label="Profile Summary"]',
-      'button[aria-label="Grok actions"]',
-      '[data-testid="GrokDrawer"]',
-      'button[aria-label="Enhance your post with Grok"]',
-      '[data-testid="grokImgGen"]'
-    ];
-
-    grokSelectors.forEach(selector => {
-      const elements = document.querySelectorAll(selector);
-      elements.forEach(element => {
-        if (element && element.style) {
-          element.style.display = '';
-        }
-      });
-    });
-
-    const allElements = document.querySelectorAll('*');
-    allElements.forEach(element => {
-      const text = element.textContent;
-      if (text && text.includes('Grok')) {
-        const navItem = element.closest('a[role="link"]') || element.closest('[data-testid]');
-        if (navItem && navItem.style && navItem.style.display === 'none') {
-          const href = navItem.getAttribute('href');
-          const role = navItem.getAttribute('role');
-          const dataTestId = navItem.getAttribute('data-testid');
-
-          if (role === 'tab') {
-            return;
-          }
-
-          const hasSidebarHref = href && (href.startsWith('/i/') || href.includes('/grok'));
-          const hasSidebarTestId = dataTestId && ['grok'].includes(dataTestId);
-
-          if (hasSidebarHref || hasSidebarTestId) {
-            navItem.style.display = '';
-            console.log('Restored text-based Grok element:', navItem);
-          }
-        }
-      }
-    });
+    restoreElementsForFeature('grok');
 
     this.isProcessing = false;
   }
@@ -412,6 +316,79 @@ class GrokRemover {
 class TwitterBirdRestorer {
   constructor() {
     this.isProcessing = false;
+  }
+
+  updateComposeButtonLabels(fromLabel, toLabel) {
+    const composeButtons = document.querySelectorAll(
+      'button[data-testid="tweetButtonInline"], ' +
+      'a[data-testid="SideNav_NewTweet_Button"], ' +
+      'button[aria-label="Post"], a[aria-label="Post"]'
+    );
+    let updatedLabels = 0;
+
+    composeButtons.forEach(button => {
+      const walker = document.createTreeWalker(button, NodeFilter.SHOW_TEXT);
+      let textNode;
+      while ((textNode = walker.nextNode())) {
+        const parent = textNode.parentElement;
+        if (!parent || parent.closest('svg')) continue;
+
+        if (fromLabel === 'Post' && textNode.nodeValue?.trim() === fromLabel) {
+          if (!parent.hasAttribute('data-xplus-original-post-label')) {
+            parent.setAttribute('data-xplus-original-post-label', textNode.nodeValue);
+          }
+          textNode.nodeValue = textNode.nodeValue.replace(fromLabel, toLabel);
+          updatedLabels++;
+        } else if (fromLabel === 'Tweet' && parent.hasAttribute('data-xplus-original-post-label')) {
+          textNode.nodeValue = parent.getAttribute('data-xplus-original-post-label');
+          parent.removeAttribute('data-xplus-original-post-label');
+          updatedLabels++;
+        } else if (fromLabel === 'Tweet' && textNode.nodeValue?.trim() === fromLabel) {
+          textNode.nodeValue = textNode.nodeValue.replace(fromLabel, toLabel);
+          updatedLabels++;
+        }
+      }
+    });
+    return updatedLabels;
+  }
+
+  updateLogoText(toLabel) {
+    const logoElements = document.querySelectorAll(
+      'a[aria-label="X"], h1, div[role="banner"]'
+    );
+    let updatedLabels = 0;
+
+    logoElements.forEach(element => {
+      const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
+      let textNode;
+      while ((textNode = walker.nextNode())) {
+        if (!/^[\s]*[X𝕏][\s]*$/.test(textNode.nodeValue || '')) continue;
+        const parent = textNode.parentElement;
+        if (!parent) continue;
+
+        if (!parent.hasAttribute('data-xplus-original-logo-text')) {
+          parent.setAttribute('data-xplus-original-logo-text', textNode.nodeValue);
+        }
+        textNode.nodeValue = textNode.nodeValue.replace(/[X𝕏]/, toLabel);
+        updatedLabels++;
+      }
+    });
+    return updatedLabels;
+  }
+
+  restoreLogoText() {
+    document.querySelectorAll('[data-xplus-original-logo-text]').forEach(parent => {
+      const originalText = parent.getAttribute('data-xplus-original-logo-text');
+      const walker = document.createTreeWalker(parent, NodeFilter.SHOW_TEXT);
+      let textNode;
+      while ((textNode = walker.nextNode())) {
+        if (textNode.nodeValue?.trim() === '🐦') {
+          textNode.nodeValue = originalText;
+          break;
+        }
+      }
+      parent.removeAttribute('data-xplus-original-logo-text');
+    });
   }
 
   restoreTwitterBird() {
@@ -462,53 +439,9 @@ class TwitterBirdRestorer {
       }
     });
 
-    const allElements = document.querySelectorAll('*');
-    allElements.forEach(element => {
-      const text = element.textContent;
-      if (text && (text.includes('X') || text.includes('𝕏'))) {
-        const isLogoElement = element.closest('a[aria-label="X"]') ||
-          element.closest('a[href="/home"]') ||
-          element.closest('h1') ||
-          element.closest('div[role="banner"]');
+    foundElements += this.updateLogoText('🐦');
 
-        if (isLogoElement && element.style && element.style.display !== 'none') {
-          element.innerHTML = '🐦';
-          foundElements++;
-          console.log('Restored Twitter bird text:', element);
-        }
-      }
-    });
-
-    // Replace "Post" with "Tweet"
-    const postElements = document.querySelectorAll('*');
-    postElements.forEach(element => {
-      const text = element.textContent;
-      if (text && text.trim() === 'Post') {
-        const isPostButton = element.closest('button[data-testid="tweetButtonInline"]') ||
-          element.closest('a[data-testid="SideNav_NewTweet_Button"]') ||
-          element.closest('button[aria-label*="Post"]') ||
-          element.closest('a[aria-label*="Post"]');
-
-        if (isPostButton && element.style && element.style.display !== 'none') {
-          const originalColor = element.style.color;
-          const originalFontWeight = element.style.fontWeight;
-          const originalFontSize = element.style.fontSize;
-
-          if (element.innerHTML.includes('Post')) {
-            element.innerHTML = element.innerHTML.replace(/Post/g, 'Tweet');
-          } else {
-            element.textContent = 'Tweet';
-          }
-
-          if (originalColor) element.style.color = originalColor;
-          if (originalFontWeight) element.style.fontWeight = originalFontWeight;
-          if (originalFontSize) element.style.fontSize = originalFontSize;
-
-          foundElements++;
-          console.log('Replaced Post with Tweet:', element);
-        }
-      }
-    });
+    foundElements += this.updateComposeButtonLabels('Post', 'Tweet');
 
     console.log(`Total Twitter bird elements restored: ${foundElements}`);
     this.isProcessing = false;
@@ -520,54 +453,14 @@ class TwitterBirdRestorer {
 
     console.log('Removing Twitter bird restoration...');
 
-    const twitterBirdSvgs = document.querySelectorAll('svg');
+    const twitterBirdSvgs = document.querySelectorAll('svg[data-original-svg]');
     twitterBirdSvgs.forEach(svg => {
-      if (svg.innerHTML.includes('M23.643 4.937c-.835.37-1.732.62-2.675.733.962-.576 1.7-1.49 2.048-2.578-.9.534-1.897.922-2.958 1.13-.85-.904-2.06-1.47-3.4-1.47-2.572 0-4.658 2.086-4.658 4.66 0 .364.042.718.12 1.06-3.873-.195-7.304-2.05-9.602-4.868-.4.69-.63 1.49-.63 2.342 0 1.616.823 3.043 2.072 3.878-.764-.025-1.482-.234-2.11-.583v.06c0 2.257 1.605 4.14 3.737 4.568-.392.106-.803.162-1.227.162-.3 0-.593-.028-.877-.082.593 1.85 2.313 3.198 4.352 3.234-1.595 1.25-3.604 1.995-5.786 1.995-.376 0-.747-.022-1.112-.065 2.062 1.323 4.51 2.093 7.14 2.093 8.57 0 13.255-7.098 13.255-13.254 0-.2-.005-.402-.014-.602.91-.658 1.7-1.477 2.323-2.41z')) {
-        // Skip home icon - don't restore home icon
-        const parentLink = svg.closest('a');
-        if (parentLink && parentLink.getAttribute('href') === '/home') {
-          const ariaLabel = parentLink.getAttribute('aria-label');
-          if (ariaLabel !== 'X') {
-            return;
-          }
-        }
-
-        if (svg.hasAttribute('data-original-svg')) {
-          svg.innerHTML = svg.getAttribute('data-original-svg');
-          svg.removeAttribute('data-original-svg');
-          console.log('Restored original X logo:', svg);
-        }
-      }
+      svg.innerHTML = svg.getAttribute('data-original-svg');
+      svg.removeAttribute('data-original-svg');
     });
 
-    const tweetElements = document.querySelectorAll('*');
-    tweetElements.forEach(element => {
-      const text = element.textContent;
-      if (text && text.trim() === 'Tweet') {
-        const isTweetButton = element.closest('button[data-testid="tweetButtonInline"]') ||
-          element.closest('a[data-testid="SideNav_NewTweet_Button"]') ||
-          element.closest('button[aria-label*="Post"]') ||
-          element.closest('a[aria-label*="Post"]');
-
-        if (isTweetButton && element.style && element.style.display !== 'none') {
-          const originalColor = element.style.color;
-          const originalFontWeight = element.style.fontWeight;
-          const originalFontSize = element.style.fontSize;
-
-          if (element.innerHTML.includes('Tweet')) {
-            element.innerHTML = element.innerHTML.replace(/Tweet/g, 'Post');
-          } else {
-            element.textContent = 'Post';
-          }
-
-          if (originalColor) element.style.color = originalColor;
-          if (originalFontWeight) element.style.fontWeight = originalFontWeight;
-          if (originalFontSize) element.style.fontSize = originalFontSize;
-
-          console.log('Restored Tweet back to Post:', element);
-        }
-      }
-    });
+    this.restoreLogoText();
+    this.updateComposeButtonLabels('Tweet', 'Post');
 
     console.log('Twitter bird restoration removed');
 
@@ -910,15 +803,14 @@ class WhoToFollowRemover {
   removeWhoToFollow() {
     if (this.isProcessing) return;
     this.isProcessing = true;
-  
-  console.log('Attempting to remove "Who to follow" section...');
-  
+
+    console.log('Attempting to remove "Who to follow" section...');
+
     let foundElements = 0;
 
     const whoToFollowAside = document.querySelector('aside[aria-label="Who to follow"]');
 
-    if (whoToFollowAside && whoToFollowAside.style.display !== 'none') {
-      whoToFollowAside.style.display = 'none';
+    if (hideElementForFeature(whoToFollowAside, 'whoToFollow')) {
       foundElements++;
       console.log('Hidden "Who to follow" aside:', whoToFollowAside);
 
@@ -930,65 +822,14 @@ class WhoToFollowRemover {
           );
 
           if (visibleChildren.length === 0) {
-            currentParent.style.display = 'none';
-            foundElements++;
-            console.log(`Hidden empty parent container:`, currentParent);
+            if (hideElementForFeature(currentParent, 'whoToFollow')) {
+              foundElements++;
+              console.log('Hidden empty parent container:', currentParent);
+            }
           } else {
             break;
           }
 
-          currentParent = currentParent.parentElement;
-        } else {
-          break;
-        }
-      }
-    }
-
-  const whoToFollowSelectors = [
-    '[data-testid="whoToFollow"]',
-    '[data-testid="who-to-follow"]',
-    '[data-testid="whoToFollowSection"]',
-    '[data-testid="whoToFollowModule"]',
-      '[data-testid="whoToFollowList"]'
-  ];
-
-  whoToFollowSelectors.forEach(selector => {
-    try {
-      const elements = document.querySelectorAll(selector);
-      console.log(`Found ${elements.length} elements for selector: ${selector}`);
-      elements.forEach(element => {
-        if (element && element.style && element.style.display !== 'none') {
-          element.style.display = 'none';
-          foundElements++;
-          console.log('Hidden "Who to follow" element:', element);
-        }
-      });
-    } catch (e) {
-      console.log(`Error with selector ${selector}:`, e);
-    }
-  });
-
-    console.log(`Total "Who to follow" elements hidden: ${foundElements}`);
-    this.isProcessing = false;
-  }
-
-  restoreWhoToFollow() {
-    if (this.isProcessing) return;
-    this.isProcessing = true;
-
-    console.log('Restoring "Who to follow" section...');
-
-    const whoToFollowAside = document.querySelector('aside[aria-label="Who to follow"]');
-
-    if (whoToFollowAside && whoToFollowAside.style && whoToFollowAside.style.display === 'none') {
-      whoToFollowAside.style.display = '';
-      console.log('Restored "Who to follow" aside:', whoToFollowAside);
-
-      let currentParent = whoToFollowAside.parentElement;
-      for (let i = 0; i < 3; i++) {
-        if (currentParent && currentParent !== document.body && currentParent.style && currentParent.style.display === 'none') {
-          currentParent.style.display = '';
-          console.log(`Restored parent container:`, currentParent);
           currentParent = currentParent.parentElement;
         } else {
           break;
@@ -1005,13 +846,29 @@ class WhoToFollowRemover {
     ];
 
     whoToFollowSelectors.forEach(selector => {
-      const elements = document.querySelectorAll(selector);
-      elements.forEach(element => {
-        if (element && element.style) {
-          element.style.display = '';
-        }
-      });
+      try {
+        const elements = document.querySelectorAll(selector);
+        console.log(`Found ${elements.length} elements for selector: ${selector}`);
+        elements.forEach(element => {
+          if (hideElementForFeature(element, 'whoToFollow')) {
+            foundElements++;
+            console.log('Hidden "Who to follow" element:', element);
+          }
+        });
+      } catch (error) {
+        console.error(`Unable to process "Who to follow" selector "${selector}":`, error);
+      }
     });
+
+    console.log(`Total "Who to follow" elements hidden: ${foundElements}`);
+    this.isProcessing = false;
+  }
+
+  restoreWhoToFollow() {
+    if (this.isProcessing) return;
+    this.isProcessing = true;
+
+    restoreElementsForFeature('whoToFollow');
 
     this.isProcessing = false;
   }
@@ -1153,9 +1010,8 @@ class WhoToFollowRemover {
     console.log(`Total elements to hide: ${elementsToHide.length}`);
 
     elementsToHide.forEach(element => {
-      if (element && element.style && element.style.display !== 'none') {
-        element.style.display = 'none';
-          foundElements++;
+      if (hideElementForFeature(element, 'whoToFollowProfile')) {
+        foundElements++;
         console.log('Hidden profile "Who to follow" element:', element);
       }
     });
@@ -1168,10 +1024,11 @@ class WhoToFollowRemover {
             child.style.display !== 'none' && !elementsToHide.includes(child)
           );
 
-              if (visibleChildren.length === 0) {
-            currentParent.style.display = 'none';
-                foundElements++;
-            console.log(`Hidden empty parent container:`, currentParent);
+          if (visibleChildren.length === 0) {
+            if (hideElementForFeature(currentParent, 'whoToFollowProfile')) {
+              foundElements++;
+              console.log('Hidden empty parent container:', currentParent);
+            }
           } else {
             break;
           }
@@ -1201,8 +1058,7 @@ class WhoToFollowRemover {
         const elements = document.querySelectorAll(selector);
         console.log(`Found ${elements.length} profile "Who to follow" elements for selector: ${selector}`);
         elements.forEach(element => {
-          if (element && element.style && element.style.display !== 'none') {
-            element.style.display = 'none';
+          if (hideElementForFeature(element, 'whoToFollowProfile')) {
             foundElements++;
             console.log('Hidden profile "Who to follow" element:', element);
 
@@ -1214,12 +1070,13 @@ class WhoToFollowRemover {
                 );
 
                 if (visibleChildren.length === 0) {
-                  currentParent.style.display = 'none';
-                  foundElements++;
-                  console.log(`Hidden empty profile parent container:`, currentParent);
-          } else {
-            break;
-          }
+                  if (hideElementForFeature(currentParent, 'whoToFollowProfile')) {
+                    foundElements++;
+                    console.log('Hidden empty profile parent container:', currentParent);
+                  }
+                } else {
+                  break;
+                }
 
                 currentParent = currentParent.parentElement;
               } else {
@@ -1229,7 +1086,7 @@ class WhoToFollowRemover {
           }
         });
       } catch (e) {
-        console.log(`Error with profile selector ${selector}:`, e);
+        console.error(`Unable to process profile "Who to follow" selector "${selector}":`, e);
       }
     });
 
@@ -1241,117 +1098,7 @@ class WhoToFollowRemover {
     if (this.isProcessing) return;
     this.isProcessing = true;
 
-    console.log('Restoring ALL UserCells on the page...');
-
-    const allUserCells = document.querySelectorAll('button[data-testid="UserCell"]');
-    console.log(`Found ${allUserCells.length} total user cells - restoring ALL of them!`);
-
-    const whoToFollowHeadings = document.querySelectorAll('h2[aria-level="2"][role="heading"]');
-    console.log(`Found ${whoToFollowHeadings.length} potential "Who to follow" headings`);
-
-    const showMoreLinks = document.querySelectorAll('a[href*="connect_people"]');
-    console.log(`Found ${showMoreLinks.length} "Show more" links`);
-
-    const spacers = document.querySelectorAll('div.css-175oi2r.r-l00any.r-109y4c4.r-kuekak');
-    console.log(`Found ${spacers.length} spacer elements`);
-
-    const elementsToRestore = [];
-
-    allUserCells.forEach(cell => {
-      const cellContainer = cell.closest('div[data-testid="cellInnerDiv"]');
-      if (cellContainer) {
-        elementsToRestore.push(cellContainer);
-        console.log('Added UserCell to restore:', cellContainer);
-      }
-    });
-
-
-    whoToFollowHeadings.forEach(heading => {
-      if (heading.textContent.includes('Who to follow')) {
-        const headingContainer = heading.closest('div[data-testid="cellInnerDiv"]');
-        if (headingContainer) {
-          elementsToRestore.push(headingContainer);
-          console.log('Added "Who to follow" heading to restore:', headingContainer);
-        }
-      }
-    });
-
-
-    showMoreLinks.forEach(link => {
-      const linkContainer = link.closest('div[data-testid="cellInnerDiv"]');
-      if (linkContainer) {
-        elementsToRestore.push(linkContainer);
-        console.log('Added "Show more" link to restore:', linkContainer);
-      }
-    });
-
-
-    spacers.forEach(spacer => {
-      const spacerContainer = spacer.closest('div[data-testid="cellInnerDiv"]');
-      if (spacerContainer) {
-        elementsToRestore.push(spacerContainer);
-        console.log('Added spacer to restore:', spacerContainer);
-      }
-    });
-
-    console.log(`Total elements to restore: ${elementsToRestore.length}`);
-
-
-    elementsToRestore.forEach(element => {
-      if (element && element.style && element.style.display === 'none') {
-        element.style.display = '';
-        console.log('Restored UserCell element:', element);
-      }
-    });
-
-
-    elementsToRestore.forEach(element => {
-      let currentParent = element.parentElement;
-      for (let i = 0; i < 5; i++) {
-        if (currentParent && currentParent !== document.body && currentParent.style && currentParent.style.display === 'none') {
-          currentParent.style.display = '';
-          console.log(`Restored parent container:`, currentParent);
-          currentParent = currentParent.parentElement;
-        } else {
-          break;
-        }
-      }
-    });
-
-    const profileWhoToFollowSelectors = [
-    '[data-testid="whoToFollow"]',
-    '[data-testid="who-to-follow"]',
-    '[data-testid="whoToFollowSection"]',
-    '[data-testid="whoToFollowModule"]',
-    '[data-testid="whoToFollowList"]',
-      '[data-testid="profileWhoToFollow"]',
-      '[data-testid="profile-who-to-follow"]',
-      'div[aria-label*="Who to follow"]',
-      'section[aria-label*="Who to follow"]',
-      'aside[aria-label*="Who to follow"]'
-    ];
-
-    profileWhoToFollowSelectors.forEach(selector => {
-    const elements = document.querySelectorAll(selector);
-    elements.forEach(element => {
-        if (element && element.style && element.style.display === 'none') {
-        element.style.display = '';
-          console.log('Restored profile "Who to follow" element:', element);
-
-          // Also restore parent containers that might have been hidden
-          let currentParent = element.parentElement;
-          for (let i = 0; i < 3; i++) {
-            if (currentParent && currentParent !== document.body && currentParent.style && currentParent.style.display === 'none') {
-              currentParent.style.display = '';
-              console.log(`Restored profile parent container:`, currentParent);
-              currentParent = currentParent.parentElement;
-            } else {
-              break;
-            }
-          }
-      }
-    });
-  });
+    restoreElementsForFeature('whoToFollowProfile');
 
     this.isProcessing = false;
   }
@@ -1366,15 +1113,9 @@ const whoToFollowRemover = new WhoToFollowRemover();
 const twitterBirdRestorer = new TwitterBirdRestorer();
 const whatsHappeningRemover = new WhatsHappeningRemover();
 
-// Flag to prevent infinite loops
-let isProcessing = false;
-
 // Apply all active features
 function applyFeatures() {
-  if (isProcessing) return;
-  
   const settings = settingsManager.getSettings();
-  console.log('Applying features, removePremiumAds:', settings.removePremiumAds, 'removeSidebarClutter:', settings.removeSidebarClutter, 'removeWhoToFollow:', settings.removeWhoToFollow, 'removeGrok:', settings.removeGrok, 'restoreTwitterBird:', settings.restoreTwitterBird, 'removeWhatsHappening:', settings.removeWhatsHappening);
   
   if (settings.removePremiumAds) {
     premiumRemover.removePremiumAds();
@@ -1421,7 +1162,7 @@ function applyFeatures() {
 // Set up observer for dynamic content with debouncing
 let observerTimeout;
 function setupObserver() {
-  const observer = new MutationObserver((mutations) => {
+  const observer = new MutationObserver(() => {
     // Clear previous timeout
     if (observerTimeout) {
       clearTimeout(observerTimeout);
@@ -1429,10 +1170,7 @@ function setupObserver() {
     
     // Debounce the observer to prevent spam
     observerTimeout = setTimeout(() => {
-      if (!isProcessing) {
-        console.log('New content detected, applying features...');
-        applyFeatures();
-      }
+      applyFeatures();
     }, 100);
   });
 
@@ -1457,16 +1195,18 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 chrome.storage.onChanged.addListener((changes, areaName) => {
   if (areaName !== 'local' || !changes.settings?.newValue) return;
   const newSettings = changes.settings.newValue;
-  if (newSettings.removeSidebarClutter) {
-    settingsManager.settings = { ...settingsManager.getSettings(), ...newSettings };
-    sidebarNavigationCustomizer.removeSidebarClutter(newSettings);
-  }
+  settingsManager.settings = { ...settingsManager.getSettings(), ...newSettings };
+  applyFeatures();
 });
 
 // Initialize the extension
 async function init() {
   console.log('X+ (Twitter+) initialized');
-  await settingsManager.loadSettings();
+  try {
+    await settingsManager.loadSettings();
+  } catch (error) {
+    console.error('Extension settings could not be loaded; using defaults for this page:', error);
+  }
   setupObserver();
   applyFeatures();
 }
@@ -1477,16 +1217,3 @@ if (document.readyState === 'loading') {
 } else {
   init();
 }
-
-// Test function - you can call this from browser console
-window.testDeclutter = function () {
-  console.log('Testing declutter...');
-  settingsManager.updateSettings({
-    removePremiumAds: true,
-    removeSidebarClutter: true,
-    removeWhoToFollow: true
-  });
-  applyFeatures();
-};
-
-window.declutterSettings = settingsManager.getSettings();
