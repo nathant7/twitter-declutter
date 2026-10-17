@@ -3,7 +3,7 @@
 X has a lot going on. X+ lets you turn down the bits you don't want, from Grok and Premium promos to trending topics and follow suggestions. And if you miss the bird, it's still here.
 
 [Get X+ from the Firefox Add-ons Store](https://addons.mozilla.org/en-US/firefox/addon/x-4-u/)
-[Get X+ from the Chrome Web Store](https://chromewebstore.google.com/detail/x-4-u/mhacmebldfeefobhodmfmdmhmgidpegc)
+[Get X+ from the Chrome Web Store](https://addons.mozilla.org/en-US/firefox/addon/x-twitter-declutter-extension/)
 
 ## Features
 
