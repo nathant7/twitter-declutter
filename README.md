@@ -10,11 +10,11 @@ X has a lot going on. X+ lets you turn down the bits you don't want, from Grok a
 
 - **Remove Premium Ads** — Hides Premium promotions and upsells.
 - **Remove Grok** — Hides Grok navigation and related controls.
-- **Customize sidebar** — Hide or reorder X's native sidebar items. The native More menu is unchanged. Items hidden by another enabled feature are listed as unavailable. Restore default navigation resets the order and visibility preferences.
+- **Customize sidebar** — Hide or reorder X's native sidebar items.
 - **Remove Who to Follow** — Hides follow suggestions.
 - **Remove What's Happening** — Hides trending topics.
-- **Give 'em the bird!** — Brings back the Twitter bird, changes the popup title to Twitter+, and turns visible “Post” labels back into “Tweet”. X's compact compose icon stays as it is.
-
+- **Give 'em the bird!** — Brings back the Twitter bird, changes the popup title to Twitter+, and turns visible “Post” labels back into “Tweet”.
+  
 Your settings are saved and apply on `x.com` and `twitter.com`.
 
 ## Install
