@@ -118,6 +118,113 @@
     .toggle-switch.active::after {
       transform: translateX(20px);
     }
+
+    .nav-customizer-button,
+    .nav-item-control {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      border-radius: 6px;
+      padding: 6px 8px;
+      cursor: pointer;
+    }
+
+    .nav-customizer {
+      display: none;
+      margin: -6px 0 16px;
+      padding: 12px;
+      background: rgba(0, 0, 0, 0.18);
+      border-radius: 10px;
+    }
+
+    .nav-customizer.open {
+      display: block;
+    }
+
+    .nav-customizer-empty {
+      font-size: 11px;
+      line-height: 1.4;
+      opacity: 0.8;
+      margin: 0 0 10px;
+    }
+
+    .nav-item-row {
+      display: grid;
+      grid-template-columns: minmax(80px, 1fr) auto auto auto;
+      gap: 4px;
+      align-items: center;
+      margin: 6px 0;
+      font-size: 11px;
+    }
+
+    .nav-item-details {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    .nav-item-status {
+      margin-top: 2px;
+      font-size: 10px;
+      line-height: 1.2;
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    .nav-item-row.nav-item-unavailable {
+      color: rgba(255, 255, 255, 0.48);
+    }
+
+    .nav-item-row.nav-item-unavailable .nav-item-status {
+      color: rgba(255, 255, 255, 0.4);
+    }
+
+    .nav-item-group {
+      margin-top: 12px;
+    }
+
+    .nav-item-group-title {
+      margin: 0 0 6px;
+      font-size: 12px;
+      font-weight: 700;
+      opacity: 0.9;
+    }
+
+    .nav-item-visibility {
+      display: inline-grid;
+      place-items: center;
+      width: 28px;
+      height: 28px;
+      padding: 4px;
+      color: #fff;
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .nav-item-visibility svg {
+      width: 16px;
+      height: 16px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .nav-item-visibility:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .nav-item-control {
+      padding: 4px 7px;
+    }
+
+    .nav-restore-button {
+      width: 100%;
+      margin-top: 12px;
+    }
     
          .footer {
        text-align: center;
@@ -166,9 +273,14 @@
   <div class="feature-toggle">
     <div class="feature-content">
       <span class="feature-label">🧹 Remove Sidebar Clutter</span>
-      <span class="feature-description">Removes Lists, Jobs, Communities, Verified Orgs.</span>
+      <span class="feature-description">Choose which navigation items appear and reorder the visible items.</span>
     </div>
     <div class="toggle-switch" id="sidebarClutterToggle"></div>
+  </div>
+  <button class="nav-customizer-button" id="configureNavigationButton" type="button">Customize navigation</button>
+  <div class="nav-customizer" id="navigationCustomizer">
+    <div id="navigationItemsList"></div>
+    <button class="nav-customizer-button nav-restore-button" id="restoreNavigationButton" type="button">Restore default navigation</button>
   </div>
 
   <div class="feature-toggle">

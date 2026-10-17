@@ -15,8 +15,10 @@ Now available on the [Chrome Web Store!](https://chromewebstore.google.com/detai
 - Cleans up Grok action buttons
 
 ###  **Remove Sidebar Clutter**
-- Removes Lists, Jobs, Communities, and Verified Orgs from the sidebar
-- Keeps your navigation clean and focused on essential features
+- Choose which native sidebar navigation items to show or hide, and reorder visible items
+- Items removed by another active feature appear as unavailable in Hidden and return to their saved position when that feature is disabled
+- Restore default navigation returns items to their original order and unhides manually hidden items, while respecting other active removal features
+- Leaves X's original controls and More menu in place, preserving their labels, hover effects, and active icon states
 
 ###  **Remove Who to Follow**
 - Eliminates follow suggestions from your feed
@@ -58,7 +60,9 @@ Firefox temporary add-ons are removed when Firefox closes. Permanent Firefox ins
 
 3. **Toggle features on/off** - Use the simple interface to enable/disable features
 
-4. **Enjoy a cleaner experience** - Changes apply instantly across the site
+4. **Customize navigation** - Enable Remove Sidebar Clutter, then use Customize navigation to hide or reorder sidebar items. X's More menu remains unchanged.
+
+5. **Enjoy a cleaner experience** - Changes apply instantly across the site
 
 ## 🛠️ Technical Details
 
@@ -72,7 +76,7 @@ Firefox temporary add-ons are removed when Firefox closes. Permanent Firefox ins
 - `SettingsManager` - Handles extension settings and persistence
 - `PremiumRemover` - Removes premium ads and verification prompts
 - `GrokRemover` - Eliminates Grok AI features
-- `SidebarClutterRemover` - Cleans up sidebar navigation
+- `SidebarNavigationCustomizer` - Hides and reorders X's original sidebar rows while leaving its native More menu untouched
 - `WhoToFollowRemover` - Removes follow suggestions
 - `WhatsHappeningRemover` - Hides trending topics
 - `TwitterBirdRestorer` - Restores classic Twitter branding

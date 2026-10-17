@@ -1,30 +1,6 @@
 // X+ (Twitter+) App !
 console.log('X+ (Twitter+) extension loaded');
 
-// General cleanup function to hide empty containers
-function cleanupEmptyContainers() {
-  // Target the specific empty containers that are left behind
-  const emptyContainerSelectors = [
-    'div.css-175oi2r.r-yfoy6g.r-18bvks7.r-1867qdf.r-1phboty.r-rs99b7.r-1ifxtd0.r-1udh08x'
-  ];
-
-  emptyContainerSelectors.forEach(selector => {
-    const containers = document.querySelectorAll(selector);
-    containers.forEach(container => {
-      // Check if this container has any visible children
-      const visibleChildren = Array.from(container.children).filter(child =>
-        child.style.display !== 'none' && child.offsetHeight > 0
-      );
-
-      // If no visible children, hide the container
-      if (visibleChildren.length === 0) {
-        container.style.display = 'none';
-        console.log('Cleaned up empty container:', container);
-      }
-    });
-  });
-}
-
 // Settings Manager Module
 class SettingsManager {
   constructor() {
@@ -32,6 +8,7 @@ class SettingsManager {
   removePremiumAds: false,
   removeSidebarClutter: false,
       removeWhoToFollow: false,
+      sidebarNavigationItems: [],
       removeGrok: false,
       restoreTwitterBird: false,
       removeWhatsHappening: false
@@ -617,14 +594,12 @@ class WhatsHappeningRemover {
     elements.forEach(element => {
       const section = element.closest('section[aria-labelledby]');
       const sectionWrapper = section?.parentElement;
-      const wrapperOnlyContainsSection = sectionWrapper?.tagName === 'DIV' &&
-        sectionWrapper.children.length === 1 &&
-        sectionWrapper.firstElementChild === section;
-      const target = wrapperOnlyContainsSection ? sectionWrapper : section || element;
+      const target = sectionWrapper?.tagName === 'DIV' ? sectionWrapper : section || element;
 
       if (target.style.display !== 'none') {
         target.setAttribute('data-xplus-whats-happening-display', target.style.display);
-        target.style.display = 'none';
+        target.setAttribute('data-xplus-whats-happening-display-priority', target.style.getPropertyPriority('display'));
+        target.style.setProperty('display', 'none', 'important');
         foundElements++;
         console.log('Hidden "What\'s happening" section:', target);
       }
@@ -641,8 +616,14 @@ class WhatsHappeningRemover {
     console.log('Restoring "What\'s happening" section...');
 
     document.querySelectorAll('[data-xplus-whats-happening-display]').forEach(element => {
-      element.style.display = element.getAttribute('data-xplus-whats-happening-display');
+      const display = element.getAttribute('data-xplus-whats-happening-display');
+      const priority = element.getAttribute('data-xplus-whats-happening-display-priority') || '';
+      element.style.removeProperty('display');
+      if (display) {
+        element.style.setProperty('display', display, priority);
+      }
       element.removeAttribute('data-xplus-whats-happening-display');
+      element.removeAttribute('data-xplus-whats-happening-display-priority');
       console.log('Restored "What\'s happening" element or container:', element);
     });
 
@@ -650,165 +631,273 @@ class WhatsHappeningRemover {
   }
 }
 
-// Sidebar Clutter Remover
-class SidebarClutterRemover {
+// Sidebar Navigation Customizer
+class SidebarNavigationCustomizer {
   constructor() {
-    this.isProcessing = false;
+    this.items = new Map();
   }
 
-  removeSidebarClutter() {
-    if (this.isProcessing) return;
-    this.isProcessing = true;
-  
-  console.log('Attempting to remove sidebar clutter...');
-  
-  const sidebarClutterSelectors = [
-    // Lists
-    'a[href="/i/lists"]',
-      'a[href*="/lists"]',
-    '[data-testid="lists"]',
-    // Jobs
-    'a[href="/i/jobs"]',
-      'a[href*="/jobs"]',
-    '[data-testid="jobs"]',
-    // Communities
-    'a[href="/i/communities"]',
-      'a[href*="/communities"]',
-    '[data-testid="communities"]',
-    // Verified Orgs
-    'a[href="/i/verified_orgs"]',
-      'a[href="/i/verified-orgs-signup"]',
-      'a[href*="/verified-orgs"]',
-    '[data-testid="verified_orgs"]',
-      '[data-testid="vo-signup-tab"]'
-  ];
+  getItemId(element) {
+    const testId = element.getAttribute('data-testid');
+    if (testId) return testId;
 
-  let foundElements = 0;
-
-  sidebarClutterSelectors.forEach(selector => {
-    try {
-      const elements = document.querySelectorAll(selector);
-      console.log(`Found ${elements.length} elements for selector: ${selector}`);
-      elements.forEach(element => {
-        if (element && element.style && element.style.display !== 'none') {
-          element.style.display = 'none';
-          foundElements++;
-          console.log('Hidden sidebar element:', element);
-        }
-      });
-    } catch (e) {
-      console.log(`Error with selector ${selector}:`, e);
-    }
-  });
-
-  const allElements = document.querySelectorAll('*');
-  allElements.forEach(element => {
-    const text = element.textContent;
-    if (text) {
-        if (text.includes('Lists') || text.includes('Jobs') ||
-          text.includes('Communities') || text.includes('Verified Orgs')) {
-        const navItem = element.closest('a[role="link"]') || element.closest('[data-testid]');
-        if (navItem && navItem.style.display !== 'none') {
-            const href = navItem.getAttribute('href');
-            const role = navItem.getAttribute('role');
-            const dataTestId = navItem.getAttribute('data-testid');
-
-            if (role === 'tab') {
-              return;
-            }
-
-            const hasSidebarHref = href && (href.startsWith('/i/') || href.includes('/lists') || href.includes('/jobs') || href.includes('/communities') || href.includes('/verified-orgs'));
-            const hasSidebarTestId = dataTestId && ['lists', 'jobs', 'communities', 'verified_orgs', 'vo-signup-tab'].includes(dataTestId);
-
-            console.log('Text-based detection debug:', {
-              text: text.trim(),
-              href: href,
-              role: role,
-              dataTestId: dataTestId,
-              hasSidebarHref: hasSidebarHref,
-              hasSidebarTestId: hasSidebarTestId,
-              element: navItem
-            });
-
-            if (!hasSidebarHref && !hasSidebarTestId) {
-              return;
-            }
-
-          navItem.style.display = 'none';
-          foundElements++;
-          console.log('Hidden text-based sidebar element:', navItem);
-        }
+    const href = element.getAttribute('href');
+    if (href) {
+      try {
+        const path = new URL(href, window.location.href).pathname;
+        return `navigation-${path.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').toLowerCase()}`;
+      } catch (error) {
+        console.warn('Unable to identify navigation link:', href, error);
       }
     }
-  });
 
-  console.log(`Total sidebar elements hidden: ${foundElements}`);
-    this.isProcessing = false;
+    const label = this.getLabel(element);
+    return `navigation-${label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+  }
+
+  getLabel(element) {
+    const visibleText = element.querySelector('div[dir="ltr"] span, span')?.textContent ||
+      element.innerText ||
+      element.textContent;
+    return (visibleText || element.getAttribute('aria-label') || '').trim().replace(/\s+/g, ' ');
+  }
+
+  getSafeHref(element) {
+    const href = element.getAttribute('href');
+    if (!href) return null;
+
+    try {
+      const url = new URL(href, window.location.href);
+      const isXDomain = /(^|\.)x\.com$/i.test(url.hostname) || /(^|\.)twitter\.com$/i.test(url.hostname);
+      if (url.protocol !== 'https:' && !(isXDomain && url.protocol === 'http:')) return null;
+      return isXDomain ? `${url.pathname}${url.search}${url.hash}` : url.href;
+    } catch (error) {
+      console.warn('Ignoring invalid navigation link:', href, error);
+      return null;
+    }
+  }
+
+  getLayoutTarget(element, nav) {
+    let target = element;
+    let parent = element.parentElement;
+    while (parent) {
+      const display = getComputedStyle(parent).display;
+      const isLayoutContainer = ['flex', 'inline-flex', 'grid', 'inline-grid'].includes(display);
+      const targetControlCount = this.countPrimaryControls(target);
+      const siblingItemCount = Array.from(parent.children).filter(child =>
+        this.hasPrimaryControl(child)
+      ).length;
+      if (isLayoutContainer && targetControlCount === 1 && siblingItemCount > 1) {
+        return target;
+      }
+      if (parent === nav) break;
+      target = parent;
+      parent = parent.parentElement;
+    }
+    return element;
+  }
+
+  countPrimaryControls(element) {
+    const isPrimaryControl = control =>
+      !control.closest('[data-testid="Dropdown"], [role="menu"], [role="dialog"]');
+    return (element.matches('a[href], button') && isPrimaryControl(element) ? 1 : 0) +
+      Array.from(element.querySelectorAll('a[href], button')).filter(isPrimaryControl).length;
+  }
+
+  hasPrimaryControl(element) {
+    return this.countPrimaryControls(element) > 0;
+  }
+
+  collectItems(nav) {
+    const found = [];
+    const moreButton = nav.querySelector('[data-testid="AppTabBar_More_Menu"]');
+
+    Array.from(nav.querySelectorAll('a[href]')).forEach((element, index) => {
+      if (element.closest('[data-testid="Dropdown"], [role="menu"], [role="dialog"]')) return;
+      const label = this.getLabel(element);
+      const href = this.getSafeHref(element);
+      if (!label || !href) return;
+
+      const id = this.getItemId(element);
+      if (found.some(item => item.href === href || item.id === id)) return;
+      found.push({
+        id,
+        label,
+        href,
+        area: 'main',
+        source: element,
+        row: element
+      });
+    });
+    if (moreButton) {
+      found.push({
+        id: 'xplus-more-menu-toggle',
+        label: 'More button',
+        href: null,
+        area: 'main',
+        kind: 'more-toggle',
+        source: moreButton,
+        row: moreButton
+      });
+    }
+    found.forEach(item => {
+      const layoutTarget = this.getLayoutTarget(item.source, nav);
+      const nestedControls = this.countPrimaryControls(layoutTarget);
+      item.layoutTarget = layoutTarget;
+      item.row = nestedControls === 1 ? layoutTarget : item.source;
+    });
+    return found;
+  }
+
+  rememberItems(items) {
+    const currentIds = new Set(items.map(item => item.id));
+    this.items.forEach((_item, id) => {
+      if (!currentIds.has(id)) this.items.delete(id);
+    });
+    items.forEach(item => {
+      const previous = this.items.get(item.id);
+      const row = item.row || item.source.parentElement;
+      const layoutTarget = item.layoutTarget || item.source;
+      const sameOriginalRow = previous?.row === row && row?.contains(item.source);
+      const sameLayoutTarget = previous?.layoutTarget === layoutTarget;
+      const originalOrder = sameOriginalRow
+        ? previous.originalOrder
+        : Array.from(layoutTarget?.parentElement?.children || []).indexOf(layoutTarget);
+      this.items.set(item.id, {
+        ...previous,
+        ...item,
+        row,
+        parent: layoutTarget?.parentElement,
+        layoutTarget,
+        originalOrder,
+        originalCssOrder: sameLayoutTarget ? previous.originalCssOrder : layoutTarget?.style.order || '',
+        originalCssOrderPriority: sameLayoutTarget
+          ? previous.originalCssOrderPriority
+          : layoutTarget?.style.getPropertyPriority('order') || '',
+        originalDisplay: sameOriginalRow ? previous.originalDisplay : row?.style.display || '',
+        originalDisplayPriority: sameOriginalRow
+          ? previous.originalDisplayPriority
+          : row?.style.getPropertyPriority('display') || ''
+      });
+    });
+  }
+
+  persistInventory() {
+    const inventory = Array.from(this.items.values()).map(({ id, label, href, area, target, kind }) => ({
+      id,
+      label,
+      href,
+      area,
+      target,
+      kind
+    }));
+    chrome.storage.local.set({ navigationItems: inventory }, () => {
+      if (chrome.runtime.lastError) {
+        console.error('Unable to save navigation inventory:', chrome.runtime.lastError);
+      }
+    });
+  }
+
+  getPreferences(settings) {
+    const saved = new Map((settings.sidebarNavigationItems || []).map(item => [item.id, item]));
+    return Array.from(this.items.values()).map((item, index) => {
+      const preference = saved.get(item.id);
+      const isLegacyClutter = /lists|jobs|communities|verified orgs/i.test(item.label);
+      return {
+        ...item,
+        visible: preference?.area === 'hidden' || preference?.visible === false
+          ? false
+          : !(settings.removeSidebarClutter && isLegacyClutter),
+        order: Number.isInteger(preference?.order) ? preference.order : index
+      };
+    }).sort((a, b) => a.order - b.order);
+  }
+
+  cleanupLegacyNavigation() {
+    document.querySelectorAll('nav[aria-label="Primary"][data-xplus-native-nav-display]').forEach(nav => {
+      nav.style.display = nav.getAttribute('data-xplus-native-nav-display');
+      nav.removeAttribute('data-xplus-native-nav-display');
+    });
+  }
+
+  setInlineStyle(element, property, value, priority = '') {
+    if (element.style.getPropertyValue(property) === value &&
+        element.style.getPropertyPriority(property) === priority) return;
+    element.style.setProperty(property, value, priority);
+  }
+
+  restoreInlineStyle(element, property, value, priority = '') {
+    if (value) {
+      this.setInlineStyle(element, property, value, priority);
+    } else if (element.style.getPropertyValue(property) || element.style.getPropertyPriority(property)) {
+      element.style.removeProperty(property);
+    }
+  }
+
+  render(nav, settings) {
+    if (!nav.isConnected) return;
+    this.rememberItems(this.collectItems(nav));
+    const preferences = this.getPreferences(settings);
+    preferences.forEach(item => {
+      const row = item.row;
+      if (!row) return;
+      if (!item.visible) {
+        this.setInlineStyle(row, 'display', 'none', 'important');
+      } else if (row.style.display === 'none') {
+        this.restoreInlineStyle(row, 'display', item.originalDisplay, item.originalDisplayPriority);
+      }
+    });
+
+    const groups = new Map();
+    preferences.filter(item => item.parent?.isConnected).forEach(item => {
+      if (!groups.has(item.parent)) groups.set(item.parent, []);
+      groups.get(item.parent).push(item);
+    });
+    groups.forEach(items => {
+      const parent = items[0]?.parent;
+      if (!parent || !['flex', 'inline-flex', 'grid', 'inline-grid'].includes(getComputedStyle(parent).display)) return;
+      const targets = new Set(items.map(item => item.layoutTarget));
+      if (Array.from(parent.children).some(child => !targets.has(child)) ||
+          items.some(item => item.layoutTarget.parentElement !== parent)) return;
+
+      const slots = items.map(item => item.originalOrder).sort((a, b) => a - b);
+      items.sort((a, b) => a.order - b.order).forEach((item, index) => {
+        this.setInlineStyle(item.layoutTarget, 'order', String(slots[index]), 'important');
+      });
+    });
+  }
+
+  removeSidebarClutter(settings) {
+    const nav = document.querySelector('nav[aria-label="Primary"]');
+    if (!nav) return;
+
+    const previousIds = new Set(this.items.keys());
+    this.rememberItems(this.collectItems(nav));
+    if (previousIds.size !== this.items.size ||
+        Array.from(this.items.keys()).some(id => !previousIds.has(id))) {
+      this.persistInventory();
+    }
+    this.render(nav, settings);
   }
 
   restoreSidebarClutter() {
-    if (this.isProcessing) return;
-    this.isProcessing = true;
-  
-  console.log('Restoring sidebar clutter...');
-  
-  const sidebarClutterSelectors = [
-    'a[href="/i/lists"]',
-      'a[href*="/lists"]',
-    'a[href="/i/jobs"]',
-      'a[href*="/jobs"]',
-    'a[href="/i/communities"]',
-      'a[href*="/communities"]',
-    'a[href="/i/verified_orgs"]',
-      'a[href="/i/verified-orgs-signup"]',
-      'a[href*="/verified-orgs"]',
-    '[data-testid="lists"]',
-    '[data-testid="jobs"]',
-    '[data-testid="communities"]',
-      '[data-testid="verified_orgs"]',
-      '[data-testid="vo-signup-tab"]'
-  ];
-
-  sidebarClutterSelectors.forEach(selector => {
-    const elements = document.querySelectorAll(selector);
-    elements.forEach(element => {
-      if (element && element.style) {
-        element.style.display = '';
-      }
-    });
-  });
-
-  const allElements = document.querySelectorAll('*');
-  allElements.forEach(element => {
-    const text = element.textContent;
-    if (text) {
-        if (text.includes('Lists') || text.includes('Jobs') ||
-          text.includes('Communities') || text.includes('Verified Orgs')) {
-        const navItem = element.closest('a[role="link"]') || element.closest('[data-testid]');
-        if (navItem && navItem.style && navItem.style.display === 'none') {
-            const href = navItem.getAttribute('href');
-            const role = navItem.getAttribute('role');
-            const dataTestId = navItem.getAttribute('data-testid');
-
-            if (role === 'tab') {
-              return;
-            }
-
-            const hasSidebarHref = href && (href.startsWith('/i/') || href.includes('/lists') || href.includes('/jobs') || href.includes('/communities') || href.includes('/verified-orgs'));
-            const hasSidebarTestId = dataTestId && ['lists', 'jobs', 'communities', 'verified_orgs', 'vo-signup-tab'].includes(dataTestId);
-
-            if (!hasSidebarHref && !hasSidebarTestId) {
-              return;
-            }
-
-          navItem.style.display = '';
-          console.log('Restored text-based sidebar element:', navItem);
+    this.cleanupLegacyNavigation();
+    this.items.forEach(item => {
+      const row = item.row;
+      const layoutTarget = item.layoutTarget || item.source;
+      if (row) {
+        if (item.originalDisplay) {
+          this.restoreInlineStyle(row, 'display', item.originalDisplay, item.originalDisplayPriority);
+        } else {
+          this.restoreInlineStyle(row, 'display', '', '');
         }
       }
-    }
-  });
-  
-    this.isProcessing = false;
+      if (item.originalCssOrder) {
+        this.restoreInlineStyle(layoutTarget, 'order', item.originalCssOrder, item.originalCssOrderPriority);
+      } else {
+        this.restoreInlineStyle(layoutTarget, 'order', '', '');
+      }
+    });
   }
 }
 
@@ -1272,7 +1361,7 @@ class WhoToFollowRemover {
 const settingsManager = new SettingsManager();
 const premiumRemover = new PremiumRemover();
 const grokRemover = new GrokRemover();
-const sidebarClutterRemover = new SidebarClutterRemover();
+const sidebarNavigationCustomizer = new SidebarNavigationCustomizer();
 const whoToFollowRemover = new WhoToFollowRemover();
 const twitterBirdRestorer = new TwitterBirdRestorer();
 const whatsHappeningRemover = new WhatsHappeningRemover();
@@ -1300,9 +1389,9 @@ function applyFeatures() {
   }
   
   if (settings.removeSidebarClutter) {
-    sidebarClutterRemover.removeSidebarClutter();
+    sidebarNavigationCustomizer.removeSidebarClutter(settings);
   } else {
-    sidebarClutterRemover.restoreSidebarClutter();
+    sidebarNavigationCustomizer.restoreSidebarClutter();
   }
   
   if (settings.removeWhoToFollow) {
@@ -1327,8 +1416,6 @@ function applyFeatures() {
     whatsHappeningRemover.restoreWhatsHappening();
   }
 
-  // Clean up any empty containers that might be left behind
-  cleanupEmptyContainers();
 }
 
 // Set up observer for dynamic content with debouncing
@@ -1364,6 +1451,15 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     sendResponse({ success: true });
   } else if (request.action === 'getSettings') {
     sendResponse({ settings: settingsManager.getSettings() });
+  }
+});
+
+chrome.storage.onChanged.addListener((changes, areaName) => {
+  if (areaName !== 'local' || !changes.settings?.newValue) return;
+  const newSettings = changes.settings.newValue;
+  if (newSettings.removeSidebarClutter) {
+    settingsManager.settings = { ...settingsManager.getSettings(), ...newSettings };
+    sidebarNavigationCustomizer.removeSidebarClutter(newSettings);
   }
 });
 
